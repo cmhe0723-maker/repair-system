@@ -30,8 +30,28 @@ body {
 .site-header {
   background: var(--primary);
   color: #fff;
-  padding: 20px 16px;
+  /* 安裝成 App 後，避開瀏海與圓角 */
+  padding: calc(20px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 20px calc(16px + env(safe-area-inset-left));
 }
+
+.install-bar { margin-top: 12px; }
+.install-bar[hidden], .install-bar [hidden] { display: none; }
+#install-btn {
+  padding: 8px 16px;
+  background: #fff;
+  color: var(--primary);
+}
+.install-hint { margin: 0; font-size: .9rem; opacity: .95; }
+
+.offline-banner {
+  background: #fff4d6;
+  color: #6b4e00;
+  border-bottom: 1px solid #f0d58a;
+  padding: 10px 16px;
+  text-align: center;
+  font-size: .95rem;
+}
+.offline-banner[hidden] { display: none; }
 .site-header h1 { margin: 0 0 4px; font-size: 1.5rem; }
 .site-header p { margin: 0; opacity: .9; font-size: .95rem; }
 
@@ -39,6 +59,7 @@ main {
   max-width: 720px;
   margin: 0 auto;
   padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
   display: grid;
   gap: 16px;
 }

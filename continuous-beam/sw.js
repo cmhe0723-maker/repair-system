@@ -15,7 +15,8 @@ self.addEventListener('install', event => {
 
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
-    for (const key of await caches.keys()) if (key !== VERSION) await caches.delete(key);
+    // Only delete this app's old caches; other apps on the same origin keep theirs.
+    for (const key of await caches.keys()) if (key.startsWith('cbeam-') && key !== VERSION) await caches.delete(key);
     await self.clients.claim();
   })());
 });

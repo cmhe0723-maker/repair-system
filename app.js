@@ -22,6 +22,55 @@
     formMsg.hidden = false;
   }
 
+  // ---------- PWA：離線使用與安裝到主畫面 ----------
+  // 註冊 service worker（只在 https 或 localhost 有效）
+  if ("serviceWorker" in navigator && window.isSecureContext) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () { /* 註冊失敗時照常當一般網頁使用 */ });
+    });
+  }
+
+  const installBar = document.getElementById("install-bar");
+  const installBtn = document.getElementById("install-btn");
+  const iosHint = document.getElementById("ios-hint");
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  let deferredPrompt = null;
+
+  // Android / 電腦版 Chrome、Edge：瀏覽器判斷可安裝時，顯示「安裝到主畫面」按鈕
+  window.addEventListener("beforeinstallprompt", function (event) {
+    event.preventDefault();
+    deferredPrompt = event;
+    installBar.hidden = false;
+    installBtn.hidden = false;
+  });
+  installBtn.addEventListener("click", async function () {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    installBtn.hidden = true;
+    installBar.hidden = true;
+  });
+  window.addEventListener("appinstalled", function () {
+    installBar.hidden = true;
+  });
+
+  // iPhone / iPad 的 Safari 沒有安裝按鈕，改顯示操作說明
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (isIOS && !isStandalone) {
+    installBar.hidden = false;
+    iosHint.hidden = false;
+  }
+
+  // 離線提示
+  const offlineBanner = document.getElementById("offline-banner");
+  function updateOnlineStatus() {
+    offlineBanner.hidden = navigator.onLine;
+  }
+  window.addEventListener("offline", updateOnlineStatus);
+  updateOnlineStatus();
+
   // 建立 Supabase 連線；設定或程式庫缺少時直接在畫面上說明
   const cfg = window.APP_CONFIG || {};
   if (!window.supabase || !cfg.SUPABASE_URL || !cfg.SUPABASE_PUBLISHABLE_KEY) {
@@ -88,6 +137,11 @@
     event.preventDefault();
     formMsg.hidden = true;
 
+    if (!navigator.onLine) {
+      showFormMessage("目前離線，無法送出。填好的內容會保留在畫面上，連線後再按一次「送出報修」。", "error");
+      return;
+    }
+
     const rec = readForm();
     const problems = validate(rec);
     if (problems.length) {
@@ -149,20 +203,68 @@
     return li;
   }
 
+  // 上次成功載入的清單存在這台裝置上，離線時拿來顯示
+  const LIST_CACHE_KEY = "repair-list-cache-v1";
+
+  function saveListCache(rows) {
+    try {
+      localStorage.setItem(LIST_CACHE_KEY, JSON.stringify({ savedAt: new Date().toISOString(), rows: rows }));
+    } catch (e) { /* 無痕模式等情況可能無法儲存，忽略即可 */ }
+  }
+
+  function readListCache() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(LIST_CACHE_KEY) || "null");
+      return saved && Array.isArray(saved.rows) ? saved : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // 載入失敗時：有上次的資料就顯示上次的，並說明是舊資料
+  function showCachedList(reason) {
+    const saved = readListCache();
+    if (!saved) {
+      list.replaceChildren();
+      listMsg.textContent = reason;
+      return;
+    }
+    list.replaceChildren(...saved.rows.map(renderItem));
+    listMsg.textContent = reason + "以下是 " + timeFormat.format(new Date(saved.savedAt)) + " 載入的資料。";
+  }
+
   async function loadList() {
     listMsg.hidden = false;
     listMsg.textContent = "載入中…";
     refreshBtn.disabled = true;
     try {
-      const { data, error } = await client
-        .from(TABLE)
-        .select("id, created_at, reporter_name, location, category, description, urgency, status")
-        .order("created_at", { ascending: false })
-        .limit(LIST_LIMIT);
-      if (error) {
-        listMsg.textContent = "無法載入清單：" + friendlyError(error);
+      if (!navigator.onLine) {
+        showCachedList("目前離線，無法載入最新清單。");
         return;
       }
+      // 網路很差時不要一直卡在「載入中」：15 秒沒回應就放棄
+      const controller = new AbortController();
+      const timer = setTimeout(function () { controller.abort(); }, 15000);
+      let data, error;
+      try {
+        ({ data, error } = await client
+          .from(TABLE)
+          .select("id, created_at, reporter_name, location, category, description, urgency, status")
+          .order("created_at", { ascending: false })
+          .limit(LIST_LIMIT)
+          .abortSignal(controller.signal));
+      } finally {
+        clearTimeout(timer);
+      }
+      if (controller.signal.aborted) {
+        showCachedList("網路回應太慢，無法載入最新清單。");
+        return;
+      }
+      if (error) {
+        showCachedList("無法載入清單：" + friendlyError(error));
+        return;
+      }
+      saveListCache(data);
       list.replaceChildren(...data.map(renderItem));
       if (data.length) {
         listMsg.hidden = true;
@@ -170,12 +272,17 @@
         listMsg.textContent = "目前還沒有報修資料。";
       }
     } catch (err) {
-      listMsg.textContent = "無法載入清單：" + friendlyError(err);
+      showCachedList("無法載入清單：" + friendlyError(err));
     } finally {
       refreshBtn.disabled = false;
     }
   }
 
   refreshBtn.addEventListener("click", loadList);
+  // 恢復連線時，自動重新載入清單
+  window.addEventListener("online", function () {
+    updateOnlineStatus();
+    loadList();
+  });
   loadList();
 })();
