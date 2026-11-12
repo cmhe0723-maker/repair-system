@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Continuous Beam Designer</title>
+<meta name="theme-color" content="#16314f">
+<meta name="description" content="Continuous steel beam analysis and AISC 360 LRFD/ASD design.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Beam">
 <style>
 :root{
   --bg:#f3f5f8; --panel:#fff; --ink:#1d2430; --muted:#5d6878; --line:#d7dde6;
@@ -109,6 +117,7 @@ body.pdf-mode #report .svgwrap svg{min-width:0}
     <button class="btn" data-act="save" data-i18n="save"></button>
     <button class="btn" data-act="print" data-i18n="print"></button>
     <button class="btn" data-act="pdf" data-i18n="pdf"></button>
+    <button class="btn" data-act="install" data-i18n="install" id="installBtn" hidden></button>
     <label><span data-i18n="language"></span>
       <select id="langSel">
         <option value="zh">繁體中文</option><option value="en">English</option>
@@ -128,7 +137,7 @@ body.pdf-mode #report .svgwrap svg{min-width:0}
 'use strict';
 /* ====================== i18n ====================== */
 const I18N = {
-zh:{appTitle:'連續梁分析與設計',new:'新檔',open:'開啟舊檔',save:'另存新檔',print:'列印',pdf:'轉存 PDF',language:'語言',units:'單位',code:'設計規範',
+zh:{install:'安裝 App',appTitle:'連續梁分析與設計',new:'新檔',open:'開啟舊檔',save:'另存新檔',print:'列印',pdf:'轉存 PDF',language:'語言',units:'單位',code:'設計規範',
 project:'專案資訊',projName:'專案名稱',engineer:'設計者',notes:'備註',geometry:'跨距與支承',span:'跨',length:'長度',addSpan:'新增一跨',support:'支承',
 sup_fixed:'固定端',sup_pin:'鉸支承',sup_roller:'滾支承',sup_free:'自由端 / 無支承',loads:'載重',addLoad:'新增載重',type:'類型',case:'類別',
 ld_point:'集中載重',ld_udl:'均佈載重',ld_tri:'三角形載重',ld_trap:'梯形載重',ld_moment:'集中彎矩',caseD:'靜載重 D',caseL:'活載重 L',
@@ -148,7 +157,7 @@ segment:'側撐段',service:'使用載重',liveOnly:'活載',total:'D+L',limit:'
 spanOut:'載重 #{n} 所在跨不存在，已忽略。',cantNote:'懸臂跨撓度限制以 2L 計算，Cb 取 1.0。',codeNote:'依 AISC 360-22：撓曲 F2/F3、剪力 G2.1。',
 designNote:'LRFD 組合：1.4D、1.2D+1.6L；ASD 組合：D、D+L。撓度以使用載重檢核。',supports:'支承條件',spans:'跨長',dims:'尺寸',matSec:'材料與斷面',
 settings:'設定',file:'檔案',dist:'分佈載重',reactV:'垂直反力 R',reactM:'彎矩反力 M',none:'無',cases:'載重類別'},
-en:{appTitle:'Continuous Beam Analysis & Design',new:'New',open:'Open',save:'Save As',print:'Print',pdf:'Export PDF',language:'Language',units:'Units',code:'Design code',
+en:{install:'Install app',appTitle:'Continuous Beam Analysis & Design',new:'New',open:'Open',save:'Save As',print:'Print',pdf:'Export PDF',language:'Language',units:'Units',code:'Design code',
 project:'Project',projName:'Project name',engineer:'Engineer',notes:'Notes',geometry:'Spans & supports',span:'Span',length:'Length',addSpan:'Add span',support:'Support',
 sup_fixed:'Fixed',sup_pin:'Pinned',sup_roller:'Roller',sup_free:'Free / no support',loads:'Loads',addLoad:'Add load',type:'Type',case:'Case',
 ld_point:'Point load',ld_udl:'Uniform',ld_tri:'Triangular',ld_trap:'Trapezoidal',ld_moment:'Point moment',caseD:'Dead D',caseL:'Live L',
@@ -168,7 +177,7 @@ segment:'Braced segment',service:'Service',liveOnly:'Live',total:'D+L',limit:'Li
 spanOut:'Load #{n} refers to a span that does not exist and was ignored.',cantNote:'Cantilever spans use 2L for deflection limits and Cb = 1.0.',codeNote:'Per AISC 360-22: flexure F2/F3, shear G2.1.',
 designNote:'LRFD combinations: 1.4D, 1.2D+1.6L. ASD combinations: D, D+L. Deflections use service loads.',supports:'Supports',spans:'Span lengths',dims:'Dimensions',matSec:'Material & section',
 settings:'Settings',file:'File',dist:'Distributed load',reactV:'Vertical reaction R',reactM:'Moment reaction M',none:'None',cases:'Load cases'},
-th:{appTitle:'การวิเคราะห์และออกแบบคานต่อเนื่อง',new:'ไฟล์ใหม่',open:'เปิดไฟล์',save:'บันทึกเป็น',print:'พิมพ์',pdf:'ส่งออก PDF',language:'ภาษา',units:'หน่วย',code:'มาตรฐานการออกแบบ',
+th:{install:'ติดตั้งแอป',appTitle:'การวิเคราะห์และออกแบบคานต่อเนื่อง',new:'ไฟล์ใหม่',open:'เปิดไฟล์',save:'บันทึกเป็น',print:'พิมพ์',pdf:'ส่งออก PDF',language:'ภาษา',units:'หน่วย',code:'มาตรฐานการออกแบบ',
 project:'ข้อมูลโครงการ',projName:'ชื่อโครงการ',engineer:'วิศวกรผู้ออกแบบ',notes:'หมายเหตุ',geometry:'ช่วงคานและจุดรองรับ',span:'ช่วง',length:'ความยาว',addSpan:'เพิ่มช่วงคาน',support:'จุดรองรับ',
 sup_fixed:'ยึดแน่น',sup_pin:'หมุด',sup_roller:'ล้อเลื่อน',sup_free:'ปลายอิสระ / ไม่มีจุดรองรับ',loads:'น้ำหนักบรรทุก',addLoad:'เพิ่มน้ำหนักบรรทุก',type:'ชนิด',case:'กรณี',
 ld_point:'แรงกระทำเป็นจุด',ld_udl:'แผ่สม่ำเสมอ',ld_tri:'แผ่รูปสามเหลี่ยม',ld_trap:'แผ่รูปสี่เหลี่ยมคางหมู',ld_moment:'โมเมนต์กระทำเป็นจุด',caseD:'น้ำหนักคงที่ D',caseL:'น้ำหนักจร L',
@@ -188,7 +197,7 @@ segment:'ช่วงค้ำยัน',service:'น้ำหนักใช้
 spanOut:'น้ำหนัก #{n} อยู่บนช่วงที่ไม่มีอยู่จริง จึงถูกละเว้น',cantNote:'ช่วงยื่นใช้ 2L สำหรับพิกัดการแอ่นตัว และ Cb = 1.0',codeNote:'ตาม AISC 360-22: การดัด F2/F3 แรงเฉือน G2.1',
 designNote:'LRFD: 1.4D, 1.2D+1.6L  ASD: D, D+L  การแอ่นตัวใช้น้ำหนักใช้งาน',supports:'จุดรองรับ',spans:'ความยาวช่วง',dims:'ขนาด',matSec:'วัสดุและหน้าตัด',
 settings:'การตั้งค่า',file:'ไฟล์',dist:'น้ำหนักแผ่',reactV:'แรงปฏิกิริยาแนวดิ่ง R',reactM:'โมเมนต์ปฏิกิริยา M',none:'ไม่มี',cases:'กรณีน้ำหนัก'},
-id:{appTitle:'Analisis & Desain Balok Menerus',new:'Baru',open:'Buka',save:'Simpan Sebagai',print:'Cetak',pdf:'Ekspor PDF',language:'Bahasa',units:'Satuan',code:'Standar desain',
+id:{install:'Pasang aplikasi',appTitle:'Analisis & Desain Balok Menerus',new:'Baru',open:'Buka',save:'Simpan Sebagai',print:'Cetak',pdf:'Ekspor PDF',language:'Bahasa',units:'Satuan',code:'Standar desain',
 project:'Informasi proyek',projName:'Nama proyek',engineer:'Perencana',notes:'Catatan',geometry:'Bentang & tumpuan',span:'Bentang',length:'Panjang',addSpan:'Tambah bentang',support:'Tumpuan',
 sup_fixed:'Jepit',sup_pin:'Sendi',sup_roller:'Rol',sup_free:'Bebas / tanpa tumpuan',loads:'Beban',addLoad:'Tambah beban',type:'Jenis',case:'Kasus',
 ld_point:'Beban terpusat',ld_udl:'Merata',ld_tri:'Segitiga',ld_trap:'Trapesium',ld_moment:'Momen terpusat',caseD:'Beban mati D',caseL:'Beban hidup L',
@@ -705,6 +714,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
  else if(a==='save')saveFile();
  else if(a==='print')window.print();
  else if(a==='pdf')exportPDF();
+ else if(a==='install')installApp();
 });
 function fileBase(){return (state.project.name||'beam').replace(/[\\/:*?"<>|]+/g,'_').trim()||'beam'}
 function saveFile(){
@@ -722,6 +732,12 @@ async function exportPDF(){
  catch(e){alert(t('pdfFallback'));window.print()}
  finally{document.body.classList.remove('pdf-mode')}
 }
+/* ====================== PWA ====================== */
+let deferredInstall=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('#installBtn').hidden=false});
+window.addEventListener('appinstalled',()=>{deferredInstall=null;$('#installBtn').hidden=true});
+async function installApp(){if(!deferredInstall)return;deferredInstall.prompt();try{await deferredInstall.userChoice}catch(e){}deferredInstall=null;$('#installBtn').hidden=true}
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
 window.__beam={analyze:s=>analyze(s),design:(s,r)=>design(s,r),get state(){return state}};
 renderAll();
 </script>
