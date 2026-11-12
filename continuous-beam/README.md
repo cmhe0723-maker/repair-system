@@ -22,3 +22,11 @@
 - 腹板非結實時（AISC F4/F5）會顯示警告，未另行計算。
 - 未考慮活載重棋盤式排列（pattern loading）。
 - 本工具供教學與初步設計參考，正式設計請由專業技師複核。
+
+## PWA（可安裝、離線使用）
+- 網址：https://cmhe0723-maker.github.io/repair-system/continuous-beam/
+- 電腦版 Chrome / Edge：網址列右側的安裝圖示，或工具列的「安裝 App」按鈕。
+- Android Chrome：選單 →「安裝應用程式」／「加到主畫面」。
+- iPhone / iPad Safari：分享 →「加入主畫面」。
+- 開啟過一次後即可離線使用；PDF 元件會在可連網時一併快取。
+- 更新程式時請修改 `sw.js` 的 `VERSION`，讓使用者端換新快取。
