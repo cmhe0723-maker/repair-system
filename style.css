@@ -1,0 +1,143 @@
+:root {
+  --bg: #f4f6f9;
+  --card: #ffffff;
+  --text: #1d2733;
+  --muted: #5b6776;
+  --border: #d4dbe3;
+  --primary: #1f4e78;
+  --primary-hover: #183d5e;
+  --ok-bg: #e6f4ea;
+  --ok-text: #1e6b34;
+  --err-bg: #fdecea;
+  --err-text: #a12a1f;
+  --low: #3b7d4f;
+  --mid: #9a6a00;
+  --high: #b3261e;
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.site-header {
+  background: var(--primary);
+  color: #fff;
+  padding: 20px 16px;
+}
+.site-header h1 { margin: 0 0 4px; font-size: 1.5rem; }
+.site-header p { margin: 0; opacity: .9; font-size: .95rem; }
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+  display: grid;
+  gap: 16px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.card h2 { margin: 0 0 12px; font-size: 1.2rem; }
+
+.field { margin: 0 0 14px; padding: 0; border: 0; min-width: 0; }
+.field label, .field legend { display: block; font-weight: 600; margin-bottom: 6px; padding: 0; }
+.req { color: var(--err-text); }
+
+/* 16px 字級可避免 iOS 點欄位時自動放大畫面 */
+input[type="text"], select, textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 16px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+}
+textarea { resize: vertical; min-height: 110px; }
+input:focus, select:focus, textarea:focus {
+  outline: 3px solid rgba(31, 78, 120, .25);
+  border-color: var(--primary);
+}
+[aria-invalid="true"] { border-color: var(--err-text); }
+
+.segmented { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.segmented label { position: relative; margin: 0; font-weight: 400; }
+.segmented input { position: absolute; opacity: 0; pointer-events: none; }
+.segmented span {
+  display: block;
+  text-align: center;
+  padding: 12px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+.segmented input:checked + span { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+.segmented input:focus-visible + span { outline: 3px solid rgba(31, 78, 120, .35); }
+
+button {
+  font: inherit;
+  font-weight: 600;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  min-height: 44px;
+}
+#submit-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 1.05rem;
+}
+#submit-btn:hover { background: var(--primary-hover); }
+button:disabled { opacity: .6; cursor: wait; }
+button.secondary {
+  padding: 8px 14px;
+  background: #e8edf3;
+  color: var(--primary);
+}
+
+.message { margin: 12px 0 0; padding: 12px; border-radius: 8px; }
+.message.ok { background: var(--ok-bg); color: var(--ok-text); }
+.message.error { background: var(--err-bg); color: var(--err-text); }
+
+.list-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.list-head h2 { margin: 0; }
+.muted { color: var(--muted); margin: 8px 0; }
+
+.request-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.request-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+.item-top { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; }
+.badge {
+  display: inline-block;
+  font-size: .8rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e8edf3;
+  color: var(--text);
+  white-space: nowrap;
+}
+.badge.urgency-低 { background: #e3f1e7; color: var(--low); }
+.badge.urgency-中 { background: #fbf0d6; color: var(--mid); }
+.badge.urgency-高 { background: #fbe1df; color: var(--high); }
+.badge.status { background: #fff; border: 1px solid var(--border); }
+.item-desc { margin: 0 0 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.item-meta { margin: 0; font-size: .85rem; color: var(--muted); overflow-wrap: anywhere; }
