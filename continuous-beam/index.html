@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Continuous Beam Designer</title>
+<style>
+:root{
+  --bg:#f3f5f8; --panel:#fff; --ink:#1d2430; --muted:#5d6878; --line:#d7dde6;
+  --accent:#1f5fae; --accent-ink:#fff; --ok:#1b7f3b; --ng:#c62828; --warn:#a36200;
+  --cD:#3b6db3; --cL:#d9771f; --cV:#2b8a6e; --cM:#8a3fb3; --cDef:#c0392b; --cR:#1f5fae;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI","Noto Sans TC","Noto Sans Thai","Microsoft JhengHei",sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+.topbar{position:sticky;top:0;z-index:10;background:#16314f;color:#fff;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;padding:10px 16px}
+.brand{font-weight:700;font-size:17px}
+.toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.toolbar .btn{background:#24497a;color:#fff;border:1px solid #3c679f}
+.toolbar .btn:hover{background:#2f5a93}
+.toolbar select{background:#24497a;color:#fff;border:1px solid #3c679f;border-radius:6px;padding:5px 6px}
+.toolbar label{display:flex;gap:4px;align-items:center;font-size:12px;opacity:.95}
+.btn{border:1px solid var(--line);background:#fff;border-radius:6px;padding:5px 10px;cursor:pointer;white-space:nowrap}
+.btn:hover{background:#eef2f7}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.danger{color:var(--ng)}
+.btn.sm{padding:2px 8px;font-size:12px}
+.layout{display:grid;grid-template-columns:minmax(340px,430px) 1fr;gap:14px;padding:14px;align-items:start}
+.layout>*{min-width:0}
+.inputs{position:sticky;top:64px;max-height:calc(100vh - 78px);overflow:auto;padding-right:4px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-size:15px;margin:0 0 10px;color:#16314f}
+.card h3{font-size:14px;margin:0 0 8px;color:#16314f}
+.fld{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted);min-width:0}
+.fld input,.fld select,.fld textarea{border:1px solid var(--line);border-radius:5px;padding:5px 6px;background:#fff;color:var(--ink);width:100%;min-width:0}
+.fld textarea{min-height:48px;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.mt{margin-top:8px}
+.note{font-size:12px;color:var(--muted);margin:6px 0 0}
+.geo-row{display:grid;grid-template-columns:70px 1fr auto;gap:8px;align-items:end;padding:5px 0;border-bottom:1px dashed var(--line)}
+.geo-row .tag{font-weight:600;font-size:12px;color:#16314f;padding-bottom:6px}
+.geo-row.sup .tag{color:var(--accent)}
+.load{border:1px solid var(--line);border-left:4px solid var(--cD);border-radius:6px;padding:8px;margin-bottom:8px}
+.load.L{border-left-color:var(--cL)}
+.load .head{display:grid;grid-template-columns:24px 1.4fr 1fr 0.8fr auto;gap:6px;align-items:end}
+.load .num{font-weight:700;color:var(--muted);padding-bottom:6px}
+.chk{display:flex;gap:6px;align-items:center;font-size:13px}
+.report-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 16px;align-items:flex-end}
+.report-head h1{font-size:19px;margin:0;color:#16314f}
+.meta{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 14px}
+.svgwrap{overflow-x:auto}
+.svgwrap svg{display:block;width:100%;min-width:620px;height:auto}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{border:1px solid var(--line);padding:4px 6px;text-align:right;vertical-align:top}
+th{background:#eef2f7;color:#16314f;font-weight:600;text-align:center}
+td.l,th.l{text-align:left}
+.tablewrap{overflow-x:auto}
+.ok{color:var(--ok);font-weight:700}
+.ng{color:var(--ng);font-weight:700}
+.msg{border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:13px}
+.msg.err{background:#fde8e8;color:var(--ng);border:1px solid #f3b7b7}
+.msg.warn{background:#fff4e0;color:var(--warn);border:1px solid #f1d29b}
+.combo-bar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.combo-bar select{border:1px solid var(--line);border-radius:5px;padding:5px 6px;background:#fff}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-bottom:4px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:4px;vertical-align:-2px}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.stat{border:1px solid var(--line);border-radius:6px;padding:8px}
+.stat .k{font-size:12px;color:var(--muted)}
+.stat .v{font-size:16px;font-weight:700}
+.detail{font-size:12.5px;color:var(--ink)}
+.detail code{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+.print-only{display:none}
+body.pdf-mode .print-only{display:block}
+body.pdf-mode #report{width:790px;background:#fff;padding:0}
+body.pdf-mode #report .card{break-inside:avoid;page-break-inside:avoid}
+body.pdf-mode #report .svgwrap svg{min-width:0}
+@media (max-width:900px){
+  .topbar{position:static}
+  .layout{grid-template-columns:1fr}
+  .inputs{position:static;max-height:none;overflow:visible;padding-right:0}
+}
+@media (max-width:480px){
+  .layout{padding:10px 8px}
+  .grid3,.grid4{grid-template-columns:1fr 1fr}
+  .load .head{grid-template-columns:20px 1fr 1fr;}
+}
+@media print{
+  @page{size:A4;margin:12mm}
+  body{background:#fff;font-size:12px}
+  .no-print{display:none!important}
+  .print-only{display:block!important}
+  .layout{display:block;padding:0}
+  .card{break-inside:avoid;page-break-inside:avoid;border:1px solid #bbb}
+  .svgwrap{overflow:visible}
+  .svgwrap svg{min-width:0}
+}
+</style>
+</head>
+<body>
+<header class="topbar no-print">
+  <div class="brand" data-i18n="appTitle"></div>
+  <div class="toolbar">
+    <button class="btn" data-act="new" data-i18n="new"></button>
+    <button class="btn" data-act="open" data-i18n="open"></button>
+    <button class="btn" data-act="save" data-i18n="save"></button>
+    <button class="btn" data-act="print" data-i18n="print"></button>
+    <button class="btn" data-act="pdf" data-i18n="pdf"></button>
+    <label><span data-i18n="language"></span>
+      <select id="langSel">
+        <option value="zh">繁體中文</option><option value="en">English</option>
+        <option value="th">ไทย</option><option value="id">Bahasa Indonesia</option>
+      </select></label>
+    <label><span data-i18n="units"></span><select id="unitSel"></select></label>
+    <label><span data-i18n="code"></span>
+      <select id="codeSel"><option value="LRFD">LRFD</option><option value="ASD">ASD</option></select></label>
+  </div>
+</header>
+<main class="layout">
+  <section class="inputs no-print" id="inputs"></section>
+  <section class="results" id="report"></section>
+</main>
+<input type="file" id="fileInput" accept=".json,.beam.json,application/json" hidden>
+<script>
+'use strict';
+/* ====================== i18n ====================== */
+const I18N = {
+zh:{appTitle:'連續梁分析與設計',new:'新檔',open:'開啟舊檔',save:'另存新檔',print:'列印',pdf:'轉存 PDF',language:'語言',units:'單位',code:'設計規範',
+project:'專案資訊',projName:'專案名稱',engineer:'設計者',notes:'備註',geometry:'跨距與支承',span:'跨',length:'長度',addSpan:'新增一跨',support:'支承',
+sup_fixed:'固定端',sup_pin:'鉸支承',sup_roller:'滾支承',sup_free:'自由端 / 無支承',loads:'載重',addLoad:'新增載重',type:'類型',case:'類別',
+ld_point:'集中載重',ld_udl:'均佈載重',ld_tri:'三角形載重',ld_trap:'梯形載重',ld_moment:'集中彎矩',caseD:'靜載重 D',caseL:'活載重 L',
+pos:'位置 x',x1:'起點 x1',x2:'終點 x2',mag:'載重',peak:'峰值位於',peakStart:'起點',peakEnd:'終點',
+loadNote:'x 自該跨左支承起算；載重向下為正；集中彎矩順時針為正。',del:'刪除',material:'材料',grade:'鋼材等級',custom:'自訂',
+section:'斷面 (H / I 型鋼)',shape:'型鋼規格',secNote:'斷面性質依板件尺寸計算（忽略圓角），適用雙對稱 I 形斷面。',
+design:'設計參數',selfWeight:'計入梁自重 (D)',lbMode:'側向支撐',lb_full:'連續側撐 (Lb = 0)',lb_supports:'僅支承處側撐 (Lb = 跨長)',lb_custom:'自訂側撐間距',
+lb:'側撐間距 Lb',cbMode:'彎矩梯度係數 Cb',cb_auto:'依彎矩圖計算',cb_one:'取 1.0（保守）',deflLL:'活載撓度限制 L /',deflTL:'總載撓度限制 L /',
+results:'分析結果',showCombo:'圖形顯示之載重組合',dLoad:'載重圖',dShear:'剪力圖',dMoment:'彎矩圖（正彎矩 = 下緣受拉）',dDefl:'變形圖',dReact:'反力圖',
+reactions:'支承反力',combo:'組合',secProps:'斷面性質',designCheck:'設計檢核',flexure:'撓曲',shear:'剪力',deflection:'撓度',demand:'需求',capacity:'容量',
+ratio:'比值',ok:'通過',ng:'不通過',status:'結果',summary:'結果摘要',unstable:'結構不穩定（機構），請檢查支承條件。',
+webWarn:'腹板非結實（h/tw 超過 λp），本程式僅依 AISC F2/F3 計算，結果可能偏不保守。',inputSummary:'輸入資料',date:'日期',
+confirmNew:'確定要清除目前資料並開新檔？',openError:'無法讀取檔案：格式不正確。',pdfFallback:'無法載入 PDF 元件，將開啟列印視窗，請選擇「另存為 PDF」。',
+governing:'控制組合',details:'計算細節',compact:'結實',noncompact:'非結實',slender:'細長',flange:'翼板',web:'腹板',weight:'單位重',
+selfWt:'自重',maxPos:'最大正彎矩',maxNeg:'最大負彎矩',maxV:'最大剪力',maxDef:'最大撓度',maxRatio:'最大應力比',spanNo:'跨號',
+segment:'側撐段',service:'使用載重',liveOnly:'活載',total:'D+L',limit:'限制值',loadSkipped:'載重 #{n} 範圍無效（x2 必須大於 x1），已忽略。',
+spanOut:'載重 #{n} 所在跨不存在，已忽略。',cantNote:'懸臂跨撓度限制以 2L 計算，Cb 取 1.0。',codeNote:'依 AISC 360-22：撓曲 F2/F3、剪力 G2.1。',
+designNote:'LRFD 組合：1.4D、1.2D+1.6L；ASD 組合：D、D+L。撓度以使用載重檢核。',supports:'支承條件',spans:'跨長',dims:'尺寸',matSec:'材料與斷面',
+settings:'設定',file:'檔案',dist:'分佈載重',reactV:'垂直反力 R',reactM:'彎矩反力 M',none:'無',cases:'載重類別'},
+en:{appTitle:'Continuous Beam Analysis & Design',new:'New',open:'Open',save:'Save As',print:'Print',pdf:'Export PDF',language:'Language',units:'Units',code:'Design code',
+project:'Project',projName:'Project name',engineer:'Engineer',notes:'Notes',geometry:'Spans & supports',span:'Span',length:'Length',addSpan:'Add span',support:'Support',
+sup_fixed:'Fixed',sup_pin:'Pinned',sup_roller:'Roller',sup_free:'Free / no support',loads:'Loads',addLoad:'Add load',type:'Type',case:'Case',
+ld_point:'Point load',ld_udl:'Uniform',ld_tri:'Triangular',ld_trap:'Trapezoidal',ld_moment:'Point moment',caseD:'Dead D',caseL:'Live L',
+pos:'Position x',x1:'Start x1',x2:'End x2',mag:'Load',peak:'Peak at',peakStart:'start',peakEnd:'end',
+loadNote:'x is measured from the left support of the span. Loads act downward when positive; point moments are positive clockwise.',del:'Delete',material:'Material',grade:'Steel grade',custom:'Custom',
+section:'Section (H / I shape)',shape:'Shape',secNote:'Properties are computed from plate dimensions (fillets ignored). Doubly symmetric I-shapes only.',
+design:'Design parameters',selfWeight:'Include self-weight (D)',lbMode:'Lateral bracing',lb_full:'Continuous (Lb = 0)',lb_supports:'At supports only (Lb = span)',lb_custom:'Custom spacing',
+lb:'Unbraced length Lb',cbMode:'Moment gradient factor Cb',cb_auto:'From moment diagram',cb_one:'1.0 (conservative)',deflLL:'Live-load deflection limit L /',deflTL:'Total-load deflection limit L /',
+results:'Results',showCombo:'Combination shown in diagrams',dLoad:'Load diagram',dShear:'Shear force diagram',dMoment:'Bending moment diagram (positive = sagging)',dDefl:'Deflection diagram',dReact:'Reaction diagram',
+reactions:'Support reactions',combo:'Combination',secProps:'Section properties',designCheck:'Design check',flexure:'Flexure',shear:'Shear',deflection:'Deflection',demand:'Demand',capacity:'Capacity',
+ratio:'Ratio',ok:'OK',ng:'NG',status:'Status',summary:'Summary',unstable:'The structure is unstable (a mechanism). Check the supports.',
+webWarn:'The web is not compact (h/tw exceeds λp). Only AISC F2/F3 are applied, so the result may be unconservative.',inputSummary:'Input data',date:'Date',
+confirmNew:'Discard the current data and start a new file?',openError:'Could not read the file: invalid format.',pdfFallback:'The PDF component could not be loaded. The print dialog will open; choose "Save as PDF".',
+governing:'Governing combination',details:'Calculation details',compact:'Compact',noncompact:'Noncompact',slender:'Slender',flange:'Flange',web:'Web',weight:'Weight',
+selfWt:'Self-weight',maxPos:'Max. positive moment',maxNeg:'Max. negative moment',maxV:'Max. shear',maxDef:'Max. deflection',maxRatio:'Max. ratio',spanNo:'Span',
+segment:'Braced segment',service:'Service',liveOnly:'Live',total:'D+L',limit:'Limit',loadSkipped:'Load #{n} has an invalid range (x2 must exceed x1) and was ignored.',
+spanOut:'Load #{n} refers to a span that does not exist and was ignored.',cantNote:'Cantilever spans use 2L for deflection limits and Cb = 1.0.',codeNote:'Per AISC 360-22: flexure F2/F3, shear G2.1.',
+designNote:'LRFD combinations: 1.4D, 1.2D+1.6L. ASD combinations: D, D+L. Deflections use service loads.',supports:'Supports',spans:'Span lengths',dims:'Dimensions',matSec:'Material & section',
+settings:'Settings',file:'File',dist:'Distributed load',reactV:'Vertical reaction R',reactM:'Moment reaction M',none:'None',cases:'Load cases'},
+th:{appTitle:'การวิเคราะห์และออกแบบคานต่อเนื่อง',new:'ไฟล์ใหม่',open:'เปิดไฟล์',save:'บันทึกเป็น',print:'พิมพ์',pdf:'ส่งออก PDF',language:'ภาษา',units:'หน่วย',code:'มาตรฐานการออกแบบ',
+project:'ข้อมูลโครงการ',projName:'ชื่อโครงการ',engineer:'วิศวกรผู้ออกแบบ',notes:'หมายเหตุ',geometry:'ช่วงคานและจุดรองรับ',span:'ช่วง',length:'ความยาว',addSpan:'เพิ่มช่วงคาน',support:'จุดรองรับ',
+sup_fixed:'ยึดแน่น',sup_pin:'หมุด',sup_roller:'ล้อเลื่อน',sup_free:'ปลายอิสระ / ไม่มีจุดรองรับ',loads:'น้ำหนักบรรทุก',addLoad:'เพิ่มน้ำหนักบรรทุก',type:'ชนิด',case:'กรณี',
+ld_point:'แรงกระทำเป็นจุด',ld_udl:'แผ่สม่ำเสมอ',ld_tri:'แผ่รูปสามเหลี่ยม',ld_trap:'แผ่รูปสี่เหลี่ยมคางหมู',ld_moment:'โมเมนต์กระทำเป็นจุด',caseD:'น้ำหนักคงที่ D',caseL:'น้ำหนักจร L',
+pos:'ตำแหน่ง x',x1:'จุดเริ่ม x1',x2:'จุดสิ้นสุด x2',mag:'ขนาด',peak:'ค่าสูงสุดที่',peakStart:'จุดเริ่ม',peakEnd:'จุดสิ้นสุด',
+loadNote:'x วัดจากจุดรองรับด้านซ้ายของช่วงนั้น น้ำหนักทิศลงเป็นบวก โมเมนต์ตามเข็มนาฬิกาเป็นบวก',del:'ลบ',material:'วัสดุ',grade:'เกรดเหล็ก',custom:'กำหนดเอง',
+section:'หน้าตัด (H / I)',shape:'ขนาดหน้าตัด',secNote:'คุณสมบัติหน้าตัดคำนวณจากขนาดแผ่น (ไม่รวมส่วนโค้ง) ใช้กับหน้าตัด I สมมาตรสองแกนเท่านั้น',
+design:'พารามิเตอร์การออกแบบ',selfWeight:'รวมน้ำหนักตัวเองของคาน (D)',lbMode:'การค้ำยันทางข้าง',lb_full:'ค้ำยันต่อเนื่อง (Lb = 0)',lb_supports:'ค้ำยันที่จุดรองรับเท่านั้น (Lb = ช่วง)',lb_custom:'กำหนดระยะค้ำยันเอง',
+lb:'ระยะไม่ค้ำยัน Lb',cbMode:'ค่าประกอบโมเมนต์ Cb',cb_auto:'คำนวณจากแผนภาพโมเมนต์',cb_one:'1.0 (ปลอดภัย)',deflLL:'พิกัดการแอ่นตัวจากน้ำหนักจร L /',deflTL:'พิกัดการแอ่นตัวรวม L /',
+results:'ผลการวิเคราะห์',showCombo:'การรวมน้ำหนักที่แสดงในแผนภาพ',dLoad:'แผนภาพน้ำหนักบรรทุก',dShear:'แผนภาพแรงเฉือน',dMoment:'แผนภาพโมเมนต์ดัด (บวก = ท้องคานรับแรงดึง)',dDefl:'แผนภาพการแอ่นตัว',dReact:'แผนภาพแรงปฏิกิริยา',
+reactions:'แรงปฏิกิริยาที่จุดรองรับ',combo:'การรวมน้ำหนัก',secProps:'คุณสมบัติหน้าตัด',designCheck:'การตรวจสอบการออกแบบ',flexure:'การดัด',shear:'แรงเฉือน',deflection:'การแอ่นตัว',demand:'แรงที่ต้องการ',capacity:'กำลังรับ',
+ratio:'อัตราส่วน',ok:'ผ่าน',ng:'ไม่ผ่าน',status:'ผล',summary:'สรุปผล',unstable:'โครงสร้างไม่มีเสถียรภาพ (เป็นกลไก) กรุณาตรวจสอบจุดรองรับ',
+webWarn:'แผ่นเอวไม่อัดแน่น (h/tw เกิน λp) โปรแกรมใช้เฉพาะ AISC F2/F3 ผลอาจไม่ปลอดภัย',inputSummary:'ข้อมูลนำเข้า',date:'วันที่',
+confirmNew:'ต้องการล้างข้อมูลปัจจุบันและเริ่มไฟล์ใหม่หรือไม่?',openError:'ไม่สามารถอ่านไฟล์ได้: รูปแบบไม่ถูกต้อง',pdfFallback:'ไม่สามารถโหลดส่วนประกอบ PDF ได้ ระบบจะเปิดหน้าต่างพิมพ์ กรุณาเลือก "บันทึกเป็น PDF"',
+governing:'การรวมที่ควบคุม',details:'รายละเอียดการคำนวณ',compact:'อัดแน่น',noncompact:'ไม่อัดแน่น',slender:'ชะลูด',flange:'ปีก',web:'เอว',weight:'น้ำหนักต่อความยาว',
+selfWt:'น้ำหนักตัวเอง',maxPos:'โมเมนต์บวกสูงสุด',maxNeg:'โมเมนต์ลบสูงสุด',maxV:'แรงเฉือนสูงสุด',maxDef:'การแอ่นตัวสูงสุด',maxRatio:'อัตราส่วนสูงสุด',spanNo:'ช่วง',
+segment:'ช่วงค้ำยัน',service:'น้ำหนักใช้งาน',liveOnly:'น้ำหนักจร',total:'D+L',limit:'ค่าพิกัด',loadSkipped:'น้ำหนัก #{n} มีช่วงไม่ถูกต้อง (x2 ต้องมากกว่า x1) จึงถูกละเว้น',
+spanOut:'น้ำหนัก #{n} อยู่บนช่วงที่ไม่มีอยู่จริง จึงถูกละเว้น',cantNote:'ช่วงยื่นใช้ 2L สำหรับพิกัดการแอ่นตัว และ Cb = 1.0',codeNote:'ตาม AISC 360-22: การดัด F2/F3 แรงเฉือน G2.1',
+designNote:'LRFD: 1.4D, 1.2D+1.6L  ASD: D, D+L  การแอ่นตัวใช้น้ำหนักใช้งาน',supports:'จุดรองรับ',spans:'ความยาวช่วง',dims:'ขนาด',matSec:'วัสดุและหน้าตัด',
+settings:'การตั้งค่า',file:'ไฟล์',dist:'น้ำหนักแผ่',reactV:'แรงปฏิกิริยาแนวดิ่ง R',reactM:'โมเมนต์ปฏิกิริยา M',none:'ไม่มี',cases:'กรณีน้ำหนัก'},
+id:{appTitle:'Analisis & Desain Balok Menerus',new:'Baru',open:'Buka',save:'Simpan Sebagai',print:'Cetak',pdf:'Ekspor PDF',language:'Bahasa',units:'Satuan',code:'Standar desain',
+project:'Informasi proyek',projName:'Nama proyek',engineer:'Perencana',notes:'Catatan',geometry:'Bentang & tumpuan',span:'Bentang',length:'Panjang',addSpan:'Tambah bentang',support:'Tumpuan',
+sup_fixed:'Jepit',sup_pin:'Sendi',sup_roller:'Rol',sup_free:'Bebas / tanpa tumpuan',loads:'Beban',addLoad:'Tambah beban',type:'Jenis',case:'Kasus',
+ld_point:'Beban terpusat',ld_udl:'Merata',ld_tri:'Segitiga',ld_trap:'Trapesium',ld_moment:'Momen terpusat',caseD:'Beban mati D',caseL:'Beban hidup L',
+pos:'Posisi x',x1:'Awal x1',x2:'Akhir x2',mag:'Beban',peak:'Puncak di',peakStart:'awal',peakEnd:'akhir',
+loadNote:'x diukur dari tumpuan kiri bentang tersebut. Beban positif ke bawah; momen terpusat positif searah jarum jam.',del:'Hapus',material:'Material',grade:'Mutu baja',custom:'Kustom',
+section:'Penampang (profil H / I)',shape:'Profil',secNote:'Properti dihitung dari dimensi pelat (fillet diabaikan). Hanya untuk profil I simetris ganda.',
+design:'Parameter desain',selfWeight:'Termasuk berat sendiri (D)',lbMode:'Pengekang lateral',lb_full:'Menerus (Lb = 0)',lb_supports:'Hanya di tumpuan (Lb = bentang)',lb_custom:'Jarak kustom',
+lb:'Panjang tak terkekang Lb',cbMode:'Faktor gradien momen Cb',cb_auto:'Dari diagram momen',cb_one:'1,0 (konservatif)',deflLL:'Batas lendutan beban hidup L /',deflTL:'Batas lendutan total L /',
+results:'Hasil analisis',showCombo:'Kombinasi pada diagram',dLoad:'Diagram beban',dShear:'Diagram gaya geser',dMoment:'Diagram momen lentur (positif = serat bawah tarik)',dDefl:'Diagram lendutan',dReact:'Diagram reaksi',
+reactions:'Reaksi tumpuan',combo:'Kombinasi',secProps:'Properti penampang',designCheck:'Pemeriksaan desain',flexure:'Lentur',shear:'Geser',deflection:'Lendutan',demand:'Kebutuhan',capacity:'Kapasitas',
+ratio:'Rasio',ok:'Aman',ng:'Tidak aman',status:'Status',summary:'Ringkasan',unstable:'Struktur tidak stabil (mekanisme). Periksa tumpuan.',
+webWarn:'Badan tidak kompak (h/tw melebihi λp). Hanya AISC F2/F3 yang diterapkan, sehingga hasil bisa tidak konservatif.',inputSummary:'Data masukan',date:'Tanggal',
+confirmNew:'Buang data saat ini dan mulai file baru?',openError:'File tidak dapat dibaca: format tidak valid.',pdfFallback:'Komponen PDF tidak dapat dimuat. Dialog cetak akan terbuka; pilih "Simpan sebagai PDF".',
+governing:'Kombinasi menentukan',details:'Rincian perhitungan',compact:'Kompak',noncompact:'Nonkompak',slender:'Langsing',flange:'Sayap',web:'Badan',weight:'Berat',
+selfWt:'Berat sendiri',maxPos:'Momen positif maks.',maxNeg:'Momen negatif maks.',maxV:'Geser maks.',maxDef:'Lendutan maks.',maxRatio:'Rasio maks.',spanNo:'Bentang',
+segment:'Segmen terkekang',service:'Layan',liveOnly:'Hidup',total:'D+L',limit:'Batas',loadSkipped:'Beban #{n} memiliki rentang tidak valid (x2 harus lebih besar dari x1) dan diabaikan.',
+spanOut:'Beban #{n} berada pada bentang yang tidak ada dan diabaikan.',cantNote:'Bentang kantilever memakai 2L untuk batas lendutan dan Cb = 1,0.',codeNote:'Menurut AISC 360-22: lentur F2/F3, geser G2.1.',
+designNote:'Kombinasi LRFD: 1,4D, 1,2D+1,6L. Kombinasi ASD: D, D+L. Lendutan memakai beban layan.',supports:'Tumpuan',spans:'Panjang bentang',dims:'Dimensi',matSec:'Material & penampang',
+settings:'Pengaturan',file:'File',dist:'Beban terbagi',reactV:'Reaksi vertikal R',reactM:'Reaksi momen M',none:'Tidak ada',cases:'Kasus beban'}
+};
+const HTML_LANG={zh:'zh-Hant',en:'en',th:'th',id:'id'};
+function t(k,vars){let s=(I18N[state.lang]||I18N.en)[k];if(s==null)s=I18N.en[k]??k;if(vars)for(const v in vars)s=s.replace('{'+v+'}',vars[v]);return s}
+
+/* ====================== Units (internal: N, mm, MPa) ====================== */
+const UNITS={
+ SI:{label:'SI (kN, m, MPa)',len:[1000,'m'],force:[1000,'kN'],dist:[1,'kN/m'],mom:[1e6,'kN·m'],stress:[1,'MPa'],dim:[1,'mm'],defl:[1,'mm'],area:[100,'cm²'],mod:[1e3,'cm³'],inertia:[1e4,'cm⁴'],warp:[1e6,'cm⁶']},
+ MKS:{label:'MKS (tf, m, kgf/cm²)',len:[1000,'m'],force:[9806.65,'tf'],dist:[9.80665,'tf/m'],mom:[9.80665e6,'tf·m'],stress:[0.0980665,'kgf/cm²'],dim:[1,'mm'],defl:[1,'mm'],area:[100,'cm²'],mod:[1e3,'cm³'],inertia:[1e4,'cm⁴'],warp:[1e6,'cm⁶']},
+ US:{label:'US (kip, ft, ksi)',len:[304.8,'ft'],force:[4448.2216,'kip'],dist:[14.593903,'kip/ft'],mom:[1355817.95,'kip·ft'],stress:[6.8947573,'ksi'],dim:[25.4,'in'],defl:[25.4,'in'],area:[645.16,'in²'],mod:[16387.064,'in³'],inertia:[416231.43,'in⁴'],warp:[268535866,'in⁶']}
+};
+const toD=(v,q)=>v/UNITS[state.units][q][0];
+const fromD=(v,q)=>v*UNITS[state.units][q][0];
+const us=q=>UNITS[state.units][q][1];
+function fmt(v){if(v==null||!isFinite(v))return '—';const a=Math.abs(v);if(a<1e-9)return '0';
+ if(a>=1e6)return v.toExponential(3);const d=a>=1000?0:a>=100?1:a>=1?2:a>=0.01?3:4;return v.toFixed(d)}
+const fD=(v,q)=>fmt(toD(v,q));
+function inVal(v,q){if(v==null||!isFinite(v))return '';const x=q?toD(v,q):v;return String(+x.toPrecision(6))}
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ====================== Materials & shapes ====================== */
+const GRADES={'A36':[250,400],'A572 Gr.50':[345,450],'A992':[345,450],'SS400':[245,400],'SN400B':[235,400],'SN490B':[325,490],'SM490':[325,490]};
+const H_SHAPES=[['H150×75×5×7',150,75,5,7],['H200×100×5.5×8',200,100,5.5,8],['H250×125×6×9',250,125,6,9],['H300×150×6.5×9',300,150,6.5,9],
+ ['H350×175×7×11',350,175,7,11],['H400×200×8×13',400,200,8,13],['H450×200×9×14',450,200,9,14],['H500×200×10×16',500,200,10,16],
+ ['H600×200×11×17',600,200,11,17],['H700×300×13×24',700,300,13,24],['H800×300×14×26',800,300,14,26],['H900×300×16×28',900,300,16,28],
+ ['H200×200×8×12',200,200,8,12],['H250×250×9×14',250,250,9,14],['H300×300×10×15',300,300,10,15],['H350×350×12×19',350,350,12,19],
+ ['H400×400×13×21',400,400,13,21],['H294×200×8×12',294,200,8,12],['H390×300×10×16',390,300,10,16],['H488×300×11×18',488,300,11,18],['H588×300×12×20',588,300,12,20]];
+const W_SHAPES=[['W8x31',8.00,8.00,0.285,0.435],['W10x33',9.73,7.96,0.290,0.435],['W12x26',12.2,6.49,0.230,0.380],['W12x50',12.2,8.08,0.370,0.640],
+ ['W14x22',13.7,5.00,0.230,0.335],['W14x48',13.8,8.03,0.340,0.595],['W16x31',15.9,5.53,0.275,0.440],['W18x35',17.7,6.00,0.300,0.425],
+ ['W21x44',20.7,6.50,0.350,0.450],['W24x55',23.6,7.01,0.395,0.505],['W27x84',26.7,10.0,0.460,0.640],['W30x99',29.7,10.5,0.520,0.670]]
+ .map(([n,d,b,w,f])=>[n,d*25.4,b*25.4,w*25.4,f*25.4]);
+const SHAPES=Object.fromEntries([...H_SHAPES,...W_SHAPES].map(s=>[s[0],s.slice(1)]));
+
+/* ====================== State ====================== */
+const kN=1000, m=1000;
+function defaultState(){return{
+ app:'continuous-beam',version:1,lang:(state&&state.lang)||guessLang(),units:'SI',code:'LRFD',
+ project:{name:'Example beam',engineer:'',notes:''},
+ spans:[6*m,8*m,6*m],supports:['pin','roller','roller','roller'],
+ loads:[
+  {type:'udl',case:'D',span:0,x:3000,P:10*kN,M:0,x1:0,x2:6000,w:12,w1:5,w2:10,peak:'end'},
+  {type:'udl',case:'D',span:1,x:4000,P:10*kN,M:0,x1:0,x2:8000,w:12,w1:5,w2:10,peak:'end'},
+  {type:'udl',case:'D',span:2,x:3000,P:10*kN,M:0,x1:0,x2:6000,w:12,w1:5,w2:10,peak:'end'},
+  {type:'udl',case:'L',span:1,x:4000,P:10*kN,M:0,x1:0,x2:8000,w:15,w1:5,w2:10,peak:'end'},
+  {type:'point',case:'L',span:0,x:3000,P:40*kN,M:0,x1:0,x2:6000,w:10,w1:5,w2:10,peak:'end'},
+  {type:'tri',case:'L',span:2,x:3000,P:10*kN,M:0,x1:0,x2:6000,w:10,w1:5,w2:10,peak:'start'}],
+ material:{grade:'A572 Gr.50',Fy:345,Fu:450,E:200000},
+ section:{preset:'H500×200×10×16',d:500,bf:200,tw:10,tf:16},
+ design:{selfWeight:true,lbMode:'custom',lb:2000,cbMode:'auto',defLL:360,defTL:240},
+ view:{combo:'combo:1'}
+}}
+function guessLang(){const l=(navigator.language||'').toLowerCase();return l.startsWith('th')?'th':l.startsWith('id')||l.startsWith('ms')?'id':l.startsWith('zh')?'zh':'en'}
+let state=null;
+state=defaultState();
+try{const saved=localStorage.getItem('cbeam-state');if(saved){const s=JSON.parse(saved);if(validState(s))state=mergeState(s)}}catch(e){}
+function validState(s){return s&&Array.isArray(s.spans)&&s.spans.length>0&&Array.isArray(s.supports)&&s.supports.length===s.spans.length+1&&Array.isArray(s.loads)&&s.section&&s.material}
+function mergeState(s){const d=defaultState();return{...d,...s,project:{...d.project,...s.project},material:{...d.material,...s.material},section:{...d.section,...s.section},design:{...d.design,...s.design},view:{...d.view,...(s.view||{})}}}
+function persist(){try{localStorage.setItem('cbeam-state',JSON.stringify(state))}catch(e){}}
+
+/* ====================== Section properties ====================== */
+function secProps(s){
+ const {d,bf,tw,tf}=s;const h=d-2*tf,h0=d-tf;
+ const A=2*bf*tf+h*tw;
+ const Ix=bf*d**3/12-(bf-tw)*h**3/12;
+ const Iy=2*tf*bf**3/12+h*tw**3/12;
+ const Sx=2*Ix/d,Sy=2*Iy/bf;
+ const Zx=bf*tf*(d-tf)+tw*h*h/4,Zy=bf*bf*tf/2+h*tw*tw/4;
+ const J=(2*bf*tf**3+h0*tw**3)/3,Cw=Iy*h0*h0/4;
+ const rts=Math.sqrt(Math.sqrt(Iy*Cw)/Sx);
+ return{d,bf,tw,tf,h,h0,A,Ix,Iy,Sx,Sy,Zx,Zy,J,Cw,rts,rx:Math.sqrt(Ix/A),ry:Math.sqrt(Iy/A),wt:A*1e-6*7850*9.80665/1000};
+}
+function validSection(s){return s.d>0&&s.bf>0&&s.tw>0&&s.tf>0&&s.d>2*s.tf&&s.bf>=s.tw}
+
+/* ====================== AISC 360 checks ====================== */
+function flexure(sec,mat,Lb,Cb){
+ const E=mat.E,Fy=mat.Fy,{Sx,Zx,ry,rts,J,h0,h,tw,bf,tf}=sec;
+ const Mp=Fy*Zx,Mr=0.7*Fy*Sx;
+ const lamf=bf/(2*tf),lpf=0.38*Math.sqrt(E/Fy),lrf=1.0*Math.sqrt(E/Fy);
+ const lamw=h/tw,lpw=3.76*Math.sqrt(E/Fy),lrw=5.70*Math.sqrt(E/Fy);
+ const Lp=1.76*ry*Math.sqrt(E/Fy);
+ const jc=J/(Sx*h0);
+ const Lr=1.95*rts*E/(0.7*Fy)*Math.sqrt(jc+Math.sqrt(jc*jc+6.76*(0.7*Fy/E)**2));
+ let Mltb,zone;
+ if(Lb<=Lp){Mltb=Mp;zone='Lb ≤ Lp'}
+ else if(Lb<=Lr){Mltb=Math.min(Mp,Cb*(Mp-(Mp-Mr)*(Lb-Lp)/(Lr-Lp)));zone='Lp < Lb ≤ Lr'}
+ else{const r=Lb/rts;const Fcr=Cb*Math.PI**2*E/(r*r)*Math.sqrt(1+0.078*jc*r*r);Mltb=Math.min(Mp,Fcr*Sx);zone='Lb > Lr'}
+ let Mflb,fcls;
+ if(lamf<=lpf){Mflb=Mp;fcls='compact'}
+ else if(lamf<=lrf){Mflb=Mp-(Mp-Mr)*(lamf-lpf)/(lrf-lpf);fcls='noncompact'}
+ else{const kc=Math.min(0.76,Math.max(0.35,4/Math.sqrt(lamw)));Mflb=0.9*E*kc*Sx/(lamf*lamf);fcls='slender'}
+ const wcls=lamw<=lpw?'compact':lamw<=lrw?'noncompact':'slender';
+ return{Mn:Math.min(Mltb,Mflb),Mp,Mltb,Mflb,Lp,Lr,lamf,lpf,lrf,lamw,lpw,lrw,fcls,wcls,zone,Lb,Cb};
+}
+function shearCap(sec,mat){
+ const E=mat.E,Fy=mat.Fy,ht=sec.h/sec.tw,Aw=sec.d*sec.tw;let Cv1,phi,om;
+ if(ht<=2.24*Math.sqrt(E/Fy)){Cv1=1;phi=1.0;om=1.5}
+ else{phi=0.9;om=1.67;const kv=5.34,lim=1.10*Math.sqrt(kv*E/Fy);Cv1=ht<=lim?1:lim/ht}
+ return{Vn:0.6*Fy*Aw*Cv1,Cv1,phi,om,Aw,ht};
+}
+const COMBOS={LRFD:[{id:'1.4D',D:1.4,L:0},{id:'1.2D+1.6L',D:1.2,L:1.6}],ASD:[{id:'D',D:1,L:0},{id:'D+L',D:1,L:1}]};
+function viewOptions(){return[{key:'case:D',D:1,L:0,label:t('caseD')},{key:'case:L',D:0,L:1,label:t('caseL')},...COMBOS[state.code].map((c,i)=>({key:'combo:'+i,D:c.D,L:c.L,label:state.code+': '+c.id}))]}
+
+/* ====================== FE analysis (Euler-Bernoulli, banded solver) ====================== */
+function normLoads(st,warn){
+ const out=[];
+ st.loads.forEach((l,i)=>{
+  const L=st.spans[l.span];if(L==null){warn.push(t('spanOut',{n:i+1}));return}
+  const c=l.case==='L'?'L':'D',cl=x=>Math.min(L,Math.max(0,+x||0));
+  if(l.type==='point')out.push({kind:'point',case:c,span:l.span,x:cl(l.x),P:+l.P||0,i});
+  else if(l.type==='moment')out.push({kind:'moment',case:c,span:l.span,x:cl(l.x),M:+l.M||0,i});
+  else{
+   const x1=cl(l.x1),x2=cl(l.x2);if(!(x2-x1>L*1e-6)){warn.push(t('loadSkipped',{n:i+1}));return}
+   let w1,w2;if(l.type==='udl'){w1=w2=+l.w||0}else if(l.type==='tri'){if(l.peak==='start'){w1=+l.w||0;w2=0}else{w1=0;w2=+l.w||0}}else{w1=+l.w1||0;w2=+l.w2||0}
+   out.push({kind:'dist',case:c,span:l.span,x1,x2,w1,w2,i,type:l.type});
+  }
+ });
+ return out;
+}
+function analyze(st){
+ const warn=[];const sec=secProps(st.section);const EI=st.material.E*sec.Ix;
+ const loads=normLoads(st,warn);const nS=st.spans.length;
+ const X0=[0];st.spans.forEach(L=>X0.push(X0[X0.length-1]+L));
+ const nodes=[],elems=[],supNode=[];
+ const ND=Math.max(16,Math.min(60,Math.round(240/nS)));
+ for(let s=0;s<nS;s++){
+  const L=st.spans[s];const pts=[];
+  for(let k=0;k<=ND;k++)pts.push(L*k/ND);
+  loads.filter(l=>l.span===s).forEach(l=>{if(l.kind==='dist')pts.push(l.x1,l.x2);else pts.push(l.x)});
+  pts.sort((a,b)=>a-b);const u=[];
+  for(const p of pts){if(!u.length||p-u[u.length-1]>L*1e-6)u.push(p)}
+  if(L-u[u.length-1]<=L*1e-6)u[u.length-1]=L;
+  if(s===0){nodes.push({x:0,span:0,loc:0});supNode.push(0)}
+  let prev=nodes.length-1;
+  for(let j=1;j<u.length;j++){
+   nodes.push({x:X0[s]+u[j],span:s,loc:u[j]});
+   elems.push({n1:prev,n2:nodes.length-1,span:s,a:u[j-1],b:u[j],L:u[j]-u[j-1],q:{D:[0,0],L:[0,0]}});
+   prev=nodes.length-1;
+  }
+  supNode.push(nodes.length-1);
+ }
+ const sw=st.design.selfWeight?sec.wt:0;
+ for(const e of elems){
+  e.q.D[0]+=sw;e.q.D[1]+=sw;
+  for(const l of loads){if(l.kind!=='dist'||l.span!==e.span)continue;const tol=st.spans[e.span]*1e-6;
+   if(e.a>=l.x1-tol&&e.b<=l.x2+tol){const f=x=>l.w1+(l.w2-l.w1)*(x-l.x1)/(l.x2-l.x1);e.q[l.case][0]+=f(e.a);e.q[l.case][1]+=f(e.b)}}
+ }
+ const n=nodes.length,nd=2*n,BW=3;
+ const K=Array.from({length:nd},()=>new Float64Array(BW+1));
+ const F={D:new Float64Array(nd),L:new Float64Array(nd)},Fn={D:new Float64Array(nd),L:new Float64Array(nd)};
+ const kloc=L=>{const c=EI/L**3;return[[12*c,6*L*c,-12*c,6*L*c],[6*L*c,4*L*L*c,-6*L*c,2*L*L*c],[-12*c,-6*L*c,12*c,-6*L*c],[6*L*c,2*L*L*c,-6*L*c,4*L*L*c]]};
+ const ffix=(q,L)=>{const[qa,qb]=q,dq=qb-qa;return[qa*L/2+dq*3*L/20,qa*L*L/12+dq*L*L/30,qa*L/2+dq*7*L/20,-(qa*L*L/12+dq*L*L/20)]};
+ for(const e of elems){
+  e.k=kloc(e.L);e.dofs=[2*e.n1,2*e.n1+1,2*e.n2,2*e.n2+1];
+  for(let i=0;i<4;i++)for(let j=0;j<4;j++){const r=e.dofs[i],c=e.dofs[j];if(c>=r)K[r][c-r]+=e.k[i][j]}
+  e.ff={D:ffix(e.q.D,e.L),L:ffix(e.q.L,e.L)};
+  for(const c of['D','L'])for(let i=0;i<4;i++)F[c][e.dofs[i]]-=e.ff[c][i];
+ }
+ const findNode=(s,x)=>{const L=st.spans[s],tol=L*1e-6;if(x<=tol)return supNode[s];if(x>=L-tol)return supNode[s+1];
+  let best=-1,bd=Infinity;for(let i=0;i<n;i++){if(nodes[i].span!==s)continue;const dd=Math.abs(nodes[i].loc-x);if(dd<bd){bd=dd;best=i}}return best};
+ for(const l of loads){
+  if(l.kind==='point'){const k=findNode(l.span,l.x);F[l.case][2*k]-=l.P;Fn[l.case][2*k]-=l.P}
+  if(l.kind==='moment'){const k=findNode(l.span,l.x);F[l.case][2*k+1]-=l.M;Fn[l.case][2*k+1]-=l.M}
+ }
+ const cons=[];st.supports.forEach((s,i)=>{const k=supNode[i];if(s==='fixed')cons.push(2*k,2*k+1);else if(s==='pin'||s==='roller')cons.push(2*k)});
+ let maxd=0;for(let i=0;i<nd;i++)maxd=Math.max(maxd,Math.abs(K[i][0]));
+ for(const r of cons){K[r].fill(0);K[r][0]=maxd;for(let k=1;k<=BW;k++)if(r-k>=0)K[r-k][k]=0;F.D[r]=0;F.L[r]=0}
+ for(let i=0;i<nd;i++){
+  const piv=K[i][0];if(!(piv>maxd*1e-11))return{ok:false,error:t('unstable'),warn,sec,X0,supNode};
+  for(let k=1;k<=BW;k++){const j=i+k;if(j>=nd)break;const f=K[i][k]/piv;if(f===0)continue;
+   for(let mm=k;mm<=BW;mm++)if(i+mm<nd)K[j][mm-k]-=f*K[i][mm];F.D[j]-=f*F.D[i];F.L[j]-=f*F.L[i]}
+ }
+ const D={};
+ for(const c of['D','L']){const d=new Float64Array(nd);for(let i=nd-1;i>=0;i--){let s=F[c][i];for(let k=1;k<=BW;k++)if(i+k<nd)s-=K[i][k]*d[i+k];d[i]=s/K[i][0]}D[c]=d}
+ // samples
+ const sx=[],sspan=[],sloc=[];const out={D:{V:[],M:[],v:[]},L:{V:[],M:[],v:[]}};
+ for(const e of elems){
+  for(const xi of[0,0.5,1]){sx.push(X0[e.span]+e.a+xi*e.L);sspan.push(e.span);sloc.push(e.a+xi*e.L)}
+  for(const c of['D','L']){
+   const de=e.dofs.map(k=>D[c][k]);const f=[0,0,0,0];
+   for(let i=0;i<4;i++){let s=e.ff[c][i];for(let j=0;j<4;j++)s+=e.k[i][j]*de[j];f[i]=s}
+   (e.f||(e.f={}))[c]=f;const[qa,qb]=e.q[c],L=e.L,V0=f[0],M0=-f[1];
+   for(const xi of[0,0.5,1]){const x=xi*L;
+    out[c].V.push(V0-(qa*x+(qb-qa)*x*x/(2*L)));
+    out[c].M.push(M0+V0*x-(qa*x*x/2+(qb-qa)*x**3/(6*L)));
+    let v;if(xi===0)v=de[0];else if(xi===1)v=de[2];else v=0.5*de[0]+L/8*de[1]+0.5*de[2]-L/8*de[3]-(qa+qb)/2*L**4/(384*EI);
+    out[c].v.push(v)}
+  }
+ }
+ const R={D:[],L:[]};
+ st.supports.forEach((s,i)=>{const k=supNode[i];
+  for(const c of['D','L']){let rv=0,rm=0;for(const e of elems){if(e.n1===k){rv+=e.f[c][0];rm+=e.f[c][1]}if(e.n2===k){rv+=e.f[c][2];rm+=e.f[c][3]}}
+   rv-=Fn[c][2*k];rm-=Fn[c][2*k+1];
+   R[c].push({v:(s==='free')?0:rv,m:(s==='fixed')?-rm:0,has:s!=='free',hasM:s==='fixed'})}});
+ return{ok:true,warn,sec,X0,supNode,loads,sw,sx,sspan,sloc,cases:out,R,Ltot:X0[nS]};
+}
+function comb(res,D,L,key){const a=res.cases.D[key],b=res.cases.L[key];return a.map((v,i)=>D*v+L*b[i])}
+function combR(res,D,L){return res.R.D.map((r,i)=>({v:D*r.v+L*res.R.L[i].v,m:D*r.m+L*res.R.L[i].m,has:r.has,hasM:r.hasM}))}
+
+/* ====================== Design ====================== */
+function design(st,res){
+ const sec=res.sec,mat=st.material,combos=COMBOS[st.code],lrfd=st.code==='LRFD';
+ const sh=shearCap(sec,mat);const Vcap=lrfd?sh.phi*sh.Vn:sh.Vn/sh.om;
+ const nS=st.spans.length;const rows=[];
+ const Mc=combos.map(c=>comb(res,c.D,c.L,'M')),Vc=combos.map(c=>comb(res,c.D,c.L,'V'));
+ const vL=res.cases.L.v,vT=comb(res,1,1,'v');
+ for(let s=0;s<nS;s++){
+  const L=st.spans[s];const idx=[];res.sspan.forEach((sp,i)=>{if(sp===s)idx.push(i)});
+  const cant=(s===0&&st.supports[0]==='free')||(s===nS-1&&st.supports[nS]==='free');
+  let segs;const lbm=st.design.lbMode;
+  if(lbm==='full')segs=[[0,L,0]];else if(lbm==='supports')segs=[[0,L,L]];
+  else{const lb=Math.max(1,+st.design.lb||L);const nn=Math.max(1,Math.ceil(L/lb-1e-9));segs=[];for(let k=0;k<nn;k++)segs.push([k*L/nn,(k+1)*L/nn,L/nn])}
+  const Mat=(M,x)=>{let p=idx[0];for(const i of idx){if(res.sloc[i]>=x){const a=res.sloc[p],b=res.sloc[i];return b-a<1e-9?M[i]:M[p]+(M[i]-M[p])*(x-a)/(b-a)}p=i}return M[idx[idx.length-1]]};
+  let flex=null,mpos=0,mneg=0;
+  combos.forEach((c,ci)=>{const M=Mc[ci];
+   for(const i of idx){mpos=Math.max(mpos,M[i]);mneg=Math.min(mneg,M[i])}
+   segs.forEach(([a,b,Lb],si)=>{
+    let Mmax=0;for(const i of idx){const x=res.sloc[i];if(x>=a-1e-6&&x<=b+1e-6)Mmax=Math.max(Mmax,Math.abs(M[i]))}
+    let Cb=1;if(st.design.cbMode==='auto'&&!cant&&Mmax>0&&Lb>0){const q=(b-a)/4;const MA=Math.abs(Mat(M,a+q)),MB=Math.abs(Mat(M,a+2*q)),MC=Math.abs(Mat(M,a+3*q));Cb=Math.min(3,12.5*Mmax/(2.5*Mmax+3*MA+4*MB+3*MC))}
+    const fl=flexure(sec,mat,Lb,Cb);const cap=lrfd?0.9*fl.Mn:fl.Mn/1.67;const ratio=cap>0?Mmax/cap:Infinity;
+    if(!flex||ratio>flex.ratio)flex={ratio,Mmax,cap,fl,combo:c.id,seg:si+1,nseg:segs.length,a,b}});
+  });
+  let shear={ratio:-1};combos.forEach((c,ci)=>{let Vmax=0;for(const i of idx)Vmax=Math.max(Vmax,Math.abs(Vc[ci][i]));const r=Vmax/Vcap;if(r>shear.ratio)shear={ratio:r,Vmax,cap:Vcap,combo:c.id}});
+  let dL=0,dT=0;for(const i of idx){dL=Math.max(dL,Math.abs(vL[i]));dT=Math.max(dT,Math.abs(vT[i]))}
+  const Ld=cant?2*L:L;const limL=Ld/(+st.design.defLL||360),limT=Ld/(+st.design.defTL||240);
+  rows.push({s,L,cant,flex,shear,mpos,mneg,dL,dT,limL,limT,rL:dL/limL,rT:dT/limT});
+ }
+ return{rows,sh,Vcap,lrfd};
+}
+
+/* ====================== SVG drawing ====================== */
+const SW=1000,PL=70,PR=34;
+function xs(res,x){return PL+x/res.Ltot*(SW-PL-PR)}
+function supportSym(type,px,py,isEnd,side){
+ const g=[];const c='#334';
+ if(type==='pin'){g.push(`<polygon points="${px},${py} ${px-11},${py+18} ${px+11},${py+18}" fill="#fff" stroke="${c}" stroke-width="1.6"/>`,hatchLine(px,py+18))}
+ else if(type==='roller'){g.push(`<polygon points="${px},${py} ${px-10},${py+14} ${px+10},${py+14}" fill="#fff" stroke="${c}" stroke-width="1.6"/>`,`<circle cx="${px-5}" cy="${py+18}" r="3.5" fill="#fff" stroke="${c}" stroke-width="1.4"/><circle cx="${px+5}" cy="${py+18}" r="3.5" fill="#fff" stroke="${c}" stroke-width="1.4"/>`,hatchLine(px,py+22))}
+ else if(type==='fixed'){
+  if(isEnd){const dx=side<0?-1:1;let h=`<line x1="${px}" y1="${py-20}" x2="${px}" y2="${py+20}" stroke="${c}" stroke-width="2.4"/>`;for(let k=-18;k<=14;k+=8)h+=`<line x1="${px}" y1="${py+k}" x2="${px+dx*8}" y2="${py+k+8}" stroke="${c}" stroke-width="1"/>`;g.push(h)}
+  else g.push(`<rect x="${px-9}" y="${py-9}" width="18" height="27" fill="#cfd6e0" stroke="${c}" stroke-width="1.4"/>`,hatchLine(px,py+18));
+ }
+ return g.join('');
+}
+function hatchLine(px,y){let h=`<line x1="${px-15}" y1="${y}" x2="${px+15}" y2="${y}" stroke="#334" stroke-width="1.4"/>`;for(let k=-14;k<=10;k+=6)h+=`<line x1="${px+k}" y1="${y}" x2="${px+k-5}" y2="${y+6}" stroke="#334" stroke-width="0.9"/>`;return h}
+function arrowDown(x,y1,y2,col,w=1.4){const up=y2<y1;const s=up?1:-1;return `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="${col}" stroke-width="${w}"/><polygon points="${x},${y2} ${x-4},${y2-s*-8} ${x+4},${y2-s*-8}" fill="${col}"/>`}
+function beamBase(res,st,beamY){
+ let g=`<line x1="${xs(res,0)}" y1="${beamY}" x2="${xs(res,res.Ltot)}" y2="${beamY}" stroke="#223" stroke-width="5" stroke-linecap="round"/>`;
+ st.supports.forEach((s,i)=>{const px=xs(res,res.X0[i]);const isEnd=i===0||i===st.supports.length-1;g+=supportSym(s,px,beamY+2.5,isEnd,i===0?-1:1)});
+ return g;
+}
+function dimLine(res,st,y){
+ let g=`<line x1="${xs(res,0)}" y1="${y}" x2="${xs(res,res.Ltot)}" y2="${y}" stroke="#889" stroke-width="1"/>`;
+ res.X0.forEach((x,i)=>{const px=xs(res,x);g+=`<line x1="${px}" y1="${y-6}" x2="${px}" y2="${y+6}" stroke="#889"/><text x="${px}" y="${y+20}" font-size="12" text-anchor="middle" fill="#557">S${i+1}</text>`});
+ st.spans.forEach((L,i)=>{const px=(xs(res,res.X0[i])+xs(res,res.X0[i+1]))/2;g+=`<text x="${px}" y="${y-5}" font-size="12.5" text-anchor="middle" fill="#334">${fD(L,'len')} ${us('len')}</text>`});
+ return g;
+}
+function loadDiagram(st,res){
+ const colOf=c=>c==='L'?'var(--cL)':'var(--cD)';
+ const lanes=res.loads.filter(l=>l.kind==='dist').map(l=>({...l,gx1:res.X0[l.span]+l.x1,gx2:res.X0[l.span]+l.x2}));
+ if(res.sw>0)lanes.unshift({kind:'dist',case:'D',gx1:0,gx2:res.Ltot,w1:res.sw,w2:res.sw,sw:true});
+ const LH=30,GAP=22;const wmax=Math.max(1e-12,...lanes.map(l=>Math.max(Math.abs(l.w1),Math.abs(l.w2))));
+ const pts=res.loads.filter(l=>l.kind!=='dist');
+ const stackH=Math.max(70,lanes.length*(LH+GAP)+24);const top=22;const beamY=top+stackH;
+ let g='';
+ lanes.forEach((l,k)=>{
+  const yb=beamY-8-k*(LH+GAP);const col=colOf(l.case);const x1=xs(res,l.gx1),x2=xs(res,l.gx2);
+  const h1=Math.abs(l.w1)/wmax*LH,h2=Math.abs(l.w2)/wmax*LH;
+  g+=`<polygon points="${x1},${yb} ${x1},${yb-h1} ${x2},${yb-h2} ${x2},${yb}" fill="${col}" fill-opacity="0.18" stroke="${col}" stroke-width="1.3"/>`;
+  const nA=Math.max(2,Math.round((x2-x1)/28));
+  for(let a=0;a<=nA;a++){const px=x1+(x2-x1)*a/nA;const hh=h1+(h2-h1)*a/nA;if(hh>3)g+=arrowDown(px,yb-hh,yb,col,1)}
+  const lab=l.sw?`${t('selfWt')} ${fD(l.w1,'dist')} ${us('dist')}`:(Math.abs(l.w1-l.w2)<1e-12?`${l.case}: w = ${fD(l.w1,'dist')}`:`${l.case}: ${fD(l.w1,'dist')} → ${fD(l.w2,'dist')}`)+' '+us('dist');
+  g+=`<text x="${(x1+x2)/2}" y="${yb-Math.max(h1,h2)-5}" font-size="12" text-anchor="middle" fill="${col}">${esc(lab)}</text>`;
+ });
+ g+=beamBase(res,st,beamY);
+ pts.forEach(l=>{const px=xs(res,res.X0[l.span]+l.x);const col=colOf(l.case);
+  if(l.kind==='point'){const yTop=Math.max(14,beamY-stackH+6);const down=l.P>=0;g+=down?arrowDown(px,yTop,beamY-4,col,2.2):arrowDown(px,beamY-4,yTop,col,2.2);
+   g+=`<text x="${px+5}" y="${yTop+2}" font-size="12.5" font-weight="600" fill="${col}">${l.case}: P = ${fD(l.P,'force')} ${us('force')}</text>`}
+  else{const r=16,cy=beamY;const cw=l.M>=0;
+   g+=`<path d="M ${px-r} ${cy} A ${r} ${r} 0 1 1 ${px} ${cy+r}" fill="none" stroke="${col}" stroke-width="2"/>`;
+   g+=cw?`<polygon points="${px-r},${cy} ${px-r-5},${cy-8} ${px-r+5},${cy-8}" fill="${col}"/>`:`<polygon points="${px},${cy+r} ${px+8},${cy+r-5} ${px+8},${cy+r+5}" fill="${col}"/>`;
+   g+=`<text x="${px+r+4}" y="${cy-r}" font-size="12.5" font-weight="600" fill="${col}">${l.case}: M = ${fD(l.M,'mom')} ${us('mom')} ${cw?'↻':'↺'}</text>`}
+ });
+ g+=dimLine(res,st,beamY+52);
+ const H=beamY+82;
+ return `<svg viewBox="0 0 ${SW} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif" role="img" aria-label="${esc(t('dLoad'))}">${g}</svg>`;
+}
+function chart(st,res,y,q,color,label){
+ const H=240,pt=26,pb=34;let ymax=0,ymin=0;for(const v of y){if(v>ymax)ymax=v;if(v<ymin)ymin=v}
+ const span0=Math.max(Math.abs(ymax),Math.abs(ymin));
+ if(span0<1e-12){ymax=1;ymin=-1}else{const r=ymax-ymin;ymax+=r*0.14;ymin-=r*0.14}
+ const Y=v=>pt+(ymax-v)/(ymax-ymin)*(H-pt-pb);const y0=Y(0);
+ let g='';
+ res.X0.forEach((x,i)=>{const px=xs(res,x);g+=`<line x1="${px}" y1="${pt-10}" x2="${px}" y2="${H-pb+4}" stroke="#c5ccd6" stroke-dasharray="4 4"/><text x="${px}" y="${H-10}" font-size="12" text-anchor="middle" fill="#557">S${i+1}</text>`});
+ let d=`M ${xs(res,res.sx[0])} ${y0}`;for(let i=0;i<y.length;i++)d+=` L ${xs(res,res.sx[i]).toFixed(1)} ${Y(y[i]).toFixed(1)}`;d+=` L ${xs(res,res.sx[res.sx.length-1])} ${y0} Z`;
+ g+=`<path d="${d}" fill="${color}" fill-opacity="0.16" stroke="none"/>`;
+ let d2='';for(let i=0;i<y.length;i++)d2+=(i?' L ':'M ')+xs(res,res.sx[i]).toFixed(1)+' '+Y(y[i]).toFixed(1);
+ g+=`<path d="${d2}" fill="none" stroke="${color}" stroke-width="2"/>`;
+ g+=`<line x1="${xs(res,0)}" y1="${y0}" x2="${xs(res,res.Ltot)}" y2="${y0}" stroke="#223" stroke-width="1.3"/>`;
+ g+=`<text x="8" y="16" font-size="12" fill="#557">${esc(label)} (${us(q)})</text>`;
+ const tiny=span0*0.03;
+ for(let s=0;s<st.spans.length;s++){let iM=-1,im=-1;
+  for(let i=0;i<y.length;i++){if(res.sspan[i]!==s)continue;if(iM<0||y[i]>y[iM])iM=i;if(im<0||y[i]<y[im])im=i}
+  const put=(i,above)=>{if(i<0)return;let px=xs(res,res.sx[i]);const py=Y(y[i]);px=Math.min(SW-PR-18,Math.max(PL+18,px));
+   g+=`<circle cx="${xs(res,res.sx[i])}" cy="${py}" r="3" fill="${color}"/><text x="${px}" y="${above?py-7:py+16}" font-size="12" font-weight="600" text-anchor="middle" fill="#223" paint-order="stroke" stroke="#fff" stroke-width="3">${fD(y[i],q)}</text>`};
+  if(iM>=0&&y[iM]>tiny)put(iM,true);if(im>=0&&y[im]<-tiny)put(im,false);
+ }
+ return `<svg viewBox="0 0 ${SW} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif" role="img" aria-label="${esc(label)}">${g}</svg>`;
+}
+function reactionDiagram(st,res,R){
+ const beamY=70,H=190;let g=beamBase(res,st,beamY);
+ R.forEach((r,i)=>{if(!r.has)return;const px=xs(res,res.X0[i]);const col='var(--cR)';
+  const up=r.v>=0;g+=up?arrowDown(px,beamY+80,beamY+30,col,2.4):arrowDown(px,beamY+30,beamY+80,col,2.4);
+  let anchor=i===0?'start':i===R.length-1?'end':'middle';const tx=i===0?px-8:i===R.length-1?px+8:px;
+  g+=`<text x="${tx}" y="${beamY+98}" font-size="13" font-weight="700" text-anchor="${anchor}" fill="${col}">R${i+1} = ${fD(r.v,'force')} ${us('force')}</text>`;
+  if(r.hasM){const rr=22;g+=`<path d="M ${px-rr} ${beamY} A ${rr} ${rr} 0 0 1 ${px+rr} ${beamY}" fill="none" stroke="#8a3fb3" stroke-width="2"/><polygon points="${px+rr},${beamY} ${px+rr-5},${beamY-9} ${px+rr+5},${beamY-8}" fill="#8a3fb3"/>`;
+   g+=`<text x="${tx}" y="${beamY-30}" font-size="12.5" font-weight="700" text-anchor="${anchor}" fill="#8a3fb3">M${i+1} = ${fD(r.m,'mom')} ${us('mom')}</text>`}
+ });
+ return `<svg viewBox="0 0 ${SW} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif" role="img" aria-label="${esc(t('dReact'))}">${g}</svg>`;
+}
+
+/* ====================== Input panel ====================== */
+function num(path,val,q,label,extra=''){return `<label class="fld"><span>${label}${q?` (${us(q)})`:''}</span><input type="number" step="any" data-path="${path}" data-kind="num" ${q?`data-q="${q}"`:''} value="${inVal(val,q)}" ${extra}></label>`}
+function sel(path,val,opts,label,rr=true){return `<label class="fld"><span>${label}</span><select data-path="${path}" data-kind="sel" ${rr?'data-rr="1"':''}>${opts.map(([v,l])=>`<option value="${esc(v)}"${String(v)===String(val)?' selected':''}>${esc(l)}</option>`).join('')}</select></label>`}
+function renderInputs(){
+ const st=state;const supOpts=['fixed','pin','roller','free'].map(s=>[s,t('sup_'+s)]);
+ let geo='';
+ st.supports.forEach((s,i)=>{
+  geo+=`<div class="geo-row sup"><div class="tag">S${i+1}</div>${sel('supports.'+i,s,supOpts,t('support'))}<div></div></div>`;
+  if(i<st.spans.length)geo+=`<div class="geo-row"><div class="tag">${t('span')} ${i+1}</div>${num('spans.'+i,st.spans[i],'len',t('length'),'min="0" data-rr="1"')}<div>${st.spans.length>1?`<button class="btn sm danger" data-act="delSpan" data-i="${i}">${t('del')}</button>`:''}</div></div>`;
+ });
+ const typeOpts=['point','udl','tri','trap','moment'].map(x=>[x,t('ld_'+x)]);
+ const caseOpts=[['D',t('caseD')],['L',t('caseL')]];
+ const spanOpts=st.spans.map((_,i)=>[i,`${t('span')} ${i+1}`]);
+ const loads=st.loads.map((l,i)=>{
+  const p='loads.'+i;let f='';
+  if(l.type==='point')f=`<div class="grid2 mt">${num(p+'.x',l.x,'len',t('pos'))}${num(p+'.P',l.P,'force','P')}</div>`;
+  else if(l.type==='moment')f=`<div class="grid2 mt">${num(p+'.x',l.x,'len',t('pos'))}${num(p+'.M',l.M,'mom','M')}</div>`;
+  else if(l.type==='udl')f=`<div class="grid3 mt">${num(p+'.x1',l.x1,'len',t('x1'))}${num(p+'.x2',l.x2,'len',t('x2'))}${num(p+'.w',l.w,'dist','w')}</div>`;
+  else if(l.type==='tri')f=`<div class="grid4 mt">${num(p+'.x1',l.x1,'len',t('x1'))}${num(p+'.x2',l.x2,'len',t('x2'))}${num(p+'.w',l.w,'dist','w max')}${sel(p+'.peak',l.peak,[['start',t('peakStart')],['end',t('peakEnd')]],t('peak'),false)}</div>`;
+  else f=`<div class="grid4 mt">${num(p+'.x1',l.x1,'len',t('x1'))}${num(p+'.x2',l.x2,'len',t('x2'))}${num(p+'.w1',l.w1,'dist','w1')}${num(p+'.w2',l.w2,'dist','w2')}</div>`;
+  return `<div class="load ${l.case}"><div class="head"><div class="num">#${i+1}</div>${sel(p+'.type',l.type,typeOpts,t('type'))}${sel(p+'.case',l.case,caseOpts,t('case'))}${sel(p+'.span',l.span,spanOpts,t('span'))}<button class="btn sm danger" data-act="delLoad" data-i="${i}">${t('del')}</button></div>${f}</div>`;
+ }).join('');
+ const gradeOpts=[...Object.keys(GRADES).map(g=>[g,`${g} (Fy ${fD(GRADES[g][0],'stress')} ${us('stress')})`]),['custom',t('custom')]];
+ const shapeSel=`<label class="fld"><span>${t('shape')}</span><select data-path="section.preset" data-kind="sel" data-rr="1">
+  <optgroup label="H (JIS / CNS)">${H_SHAPES.map(s=>`<option${s[0]===st.section.preset?' selected':''}>${s[0]}</option>`).join('')}</optgroup>
+  <optgroup label="W (AISC)">${W_SHAPES.map(s=>`<option${s[0]===st.section.preset?' selected':''}>${s[0]}</option>`).join('')}</optgroup>
+  <option value="custom"${st.section.preset==='custom'?' selected':''}>${t('custom')}</option></select></label>`;
+ const D=st.design;
+ $('#inputs').innerHTML=`
+ <div class="card"><h2>${t('project')}</h2>
+  <div class="grid2"><label class="fld"><span>${t('projName')}</span><input data-path="project.name" data-kind="text" value="${esc(st.project.name)}"></label>
+  <label class="fld"><span>${t('engineer')}</span><input data-path="project.engineer" data-kind="text" value="${esc(st.project.engineer)}"></label></div>
+  <label class="fld mt"><span>${t('notes')}</span><textarea data-path="project.notes" data-kind="text">${esc(st.project.notes)}</textarea></label></div>
+ <div class="card"><h2>${t('geometry')}</h2>${geo}<div class="mt"><button class="btn" data-act="addSpan">+ ${t('addSpan')}</button></div></div>
+ <div class="card"><h2>${t('loads')}</h2>${loads}<button class="btn" data-act="addLoad">+ ${t('addLoad')}</button><p class="note">${t('loadNote')}</p></div>
+ <div class="card"><h2>${t('material')}</h2>
+  ${sel('material.grade',st.material.grade,gradeOpts,t('grade'))}
+  <div class="grid3 mt">${num('material.Fy',st.material.Fy,'stress','Fy')}${num('material.Fu',st.material.Fu,'stress','Fu')}${num('material.E',st.material.E,'stress','E')}</div></div>
+ <div class="card"><h2>${t('section')}</h2>${shapeSel}
+  <div class="grid4 mt">${num('section.d',st.section.d,'dim','d')}${num('section.bf',st.section.bf,'dim','bf')}${num('section.tw',st.section.tw,'dim','tw')}${num('section.tf',st.section.tf,'dim','tf')}</div>
+  <p class="note">${t('secNote')}</p></div>
+ <div class="card"><h2>${t('design')}</h2>
+  <label class="chk"><input type="checkbox" data-path="design.selfWeight" data-kind="chk"${D.selfWeight?' checked':''}> ${t('selfWeight')}</label>
+  <div class="grid2 mt">${sel('design.lbMode',D.lbMode,[['full',t('lb_full')],['supports',t('lb_supports')],['custom',t('lb_custom')]],t('lbMode'))}
+  ${D.lbMode==='custom'?num('design.lb',D.lb,'len',t('lb'),'min="0"'):'<div></div>'}</div>
+  <div class="mt">${sel('design.cbMode',D.cbMode,[['auto',t('cb_auto')],['one',t('cb_one')]],t('cbMode'),false)}</div>
+  <div class="grid2 mt">${num('design.defLL',D.defLL,null,t('deflLL'),'min="1"')}${num('design.defTL',D.defTL,null,t('deflTL'),'min="1"')}</div>
+  <p class="note">${t('designNote')}<br>${t('codeNote')}</p></div>`;
+}
+
+/* ====================== Results / report ====================== */
+function renderResults(){
+ const st=state;const today=new Date().toISOString().slice(0,10);
+ let head=`<div class="card"><div class="report-head"><div><h1>${t('appTitle')}</h1><div class="meta"><span><b>${t('projName')}:</b> ${esc(st.project.name)}</span>${st.project.engineer?`<span><b>${t('engineer')}:</b> ${esc(st.project.engineer)}</span>`:''}<span><b>${t('date')}:</b> ${today}</span></div></div>
+  <div class="meta"><span><b>${t('code')}:</b> AISC 360-22 ${st.code}</span><span><b>${t('units')}:</b> ${UNITS[st.units].label}</span></div></div>
+  ${st.project.notes?`<p class="note">${esc(st.project.notes).replace(/\n/g,'<br>')}</p>`:''}</div>`;
+ if(!validSection(st.section)){$('#report').innerHTML=head+`<div class="msg err">${t('section')}: d &gt; 2tf, bf ≥ tw &gt; 0</div>`;return}
+ if(!(st.spans.every(L=>L>0))){$('#report').innerHTML=head+`<div class="msg err">${t('length')} &gt; 0</div>`;return}
+ const res=analyze(st);
+ let msgs=res.warn.map(w=>`<div class="msg warn">${esc(w)}</div>`).join('');
+ if(!res.ok){$('#report').innerHTML=head+msgs+`<div class="msg err">${esc(res.error)}</div>`+inputSummary(res.sec);return}
+ const opts=viewOptions();let vo=opts.find(o=>o.key===st.view.combo);if(!vo){vo=opts[opts.length-1];st.view.combo=vo.key}
+ const V=comb(res,vo.D,vo.L,'V'),M=comb(res,vo.D,vo.L,'M'),v=comb(res,vo.D,vo.L,'v'),R=combR(res,vo.D,vo.L);
+ const dz=design(st,res);
+ const fl0=flexure(res.sec,st.material,0,1);
+ if(fl0.wcls!=='compact')msgs+=`<div class="msg warn">${t('webWarn')}</div>`;
+ const lr=dz.lrfd;const capM=lr?'φ<sub>b</sub>M<sub>n</sub>':'M<sub>n</sub>/Ω<sub>b</sub>',capV=lr?'φ<sub>v</sub>V<sub>n</sub>':'V<sub>n</sub>/Ω<sub>v</sub>';
+ const dM=lr?'M<sub>u</sub>':'M<sub>a</sub>',dV=lr?'V<sub>u</sub>':'V<sub>a</sub>';
+ const okc=r=>r<=1+1e-9?`<span class="ok">${t('ok')}</span>`:`<span class="ng">${t('ng')}</span>`;
+ // summary
+ let maxR=0;dz.rows.forEach(r=>{maxR=Math.max(maxR,r.flex.ratio,r.shear.ratio,r.rL,r.rT)});
+ const allM=dz.rows.flatMap(r=>[r.mpos,r.mneg]);
+ const summary=`<div class="card"><h3>${t('summary')} — ${t('governing')}: ${st.code}</h3><div class="summary-grid">
+  <div class="stat"><div class="k">${t('maxPos')}</div><div class="v">${fD(Math.max(...allM),'mom')} ${us('mom')}</div></div>
+  <div class="stat"><div class="k">${t('maxNeg')}</div><div class="v">${fD(Math.min(...allM),'mom')} ${us('mom')}</div></div>
+  <div class="stat"><div class="k">${t('maxV')}</div><div class="v">${fD(Math.max(...dz.rows.map(r=>r.shear.Vmax)),'force')} ${us('force')}</div></div>
+  <div class="stat"><div class="k">${t('maxDef')} (D+L)</div><div class="v">${fD(Math.max(...dz.rows.map(r=>r.dT)),'defl')} ${us('defl')}</div></div>
+  <div class="stat"><div class="k">${t('maxRatio')}</div><div class="v ${maxR<=1?'ok':'ng'}">${maxR.toFixed(3)} ${maxR<=1?t('ok'):t('ng')}</div></div></div></div>`;
+ const comboBar=`<div class="card no-print combo-bar"><b>${t('showCombo')}</b><select id="comboSel">${opts.map(o=>`<option value="${o.key}"${o.key===vo.key?' selected':''}>${esc(o.label)}</option>`).join('')}</select></div>`;
+ const cname=`<span class="note" style="font-weight:400"> — ${esc(vo.label)}</span>`;
+ const diagrams=`
+ <div class="card"><h3>${t('dLoad')}</h3><div class="legend"><span><i style="background:var(--cD)"></i>${t('caseD')}</span><span><i style="background:var(--cL)"></i>${t('caseL')}</span></div><div class="svgwrap">${loadDiagram(st,res)}</div></div>
+ <div class="card"><h3>${t('dShear')}${cname}</h3><div class="svgwrap">${chart(st,res,V,'force','var(--cV)','V')}</div></div>
+ <div class="card"><h3>${t('dMoment')}${cname}</h3><div class="svgwrap">${chart(st,res,M,'mom','var(--cM)','M')}</div></div>
+ <div class="card"><h3>${t('dDefl')}${cname}</h3><div class="svgwrap">${chart(st,res,v,'defl','var(--cDef)','δ')}</div></div>
+ <div class="card"><h3>${t('dReact')}${cname}</h3><div class="svgwrap">${reactionDiagram(st,res,R)}</div></div>`;
+ // reactions table
+ const ropts=opts;const rAll=ropts.map(o=>combR(res,o.D,o.L));
+ let rt=`<div class="card"><h3>${t('reactions')}</h3><div class="tablewrap"><table><tr><th class="l">${t('support')}</th>${ropts.map(o=>`<th>${esc(o.label)}</th>`).join('')}</tr>`;
+ st.supports.forEach((s,i)=>{if(s==='free')return;
+  rt+=`<tr><td class="l">S${i+1} (${t('sup_'+s)}) R [${us('force')}]</td>${rAll.map(r=>`<td>${fD(r[i].v,'force')}</td>`).join('')}</tr>`;
+  if(s==='fixed')rt+=`<tr><td class="l">S${i+1} M [${us('mom')}]</td>${rAll.map(r=>`<td>${fD(r[i].m,'mom')}</td>`).join('')}</tr>`});
+ rt+=`</table></div></div>`;
+ // section props
+ const S=res.sec;const pr=[['d',S.d,'dim'],['bf',S.bf,'dim'],['tw',S.tw,'dim'],['tf',S.tf,'dim'],['A',S.A,'area'],['Ix',S.Ix,'inertia'],['Iy',S.Iy,'inertia'],['Sx',S.Sx,'mod'],['Zx',S.Zx,'mod'],['rx',S.rx,'dim'],['ry',S.ry,'dim'],['rts',S.rts,'dim'],['J',S.J,'inertia'],['Cw',S.Cw,'warp'],[t('weight'),S.wt,'dist']];
+ const cls=c=>t(c);
+ const sp=`<div class="card"><h3>${t('secProps')} — ${esc(st.section.preset==='custom'?t('custom'):st.section.preset)}, ${esc(st.material.grade==='custom'?t('custom'):st.material.grade)}</h3><div class="tablewrap"><table><tr>${pr.map(p=>`<th>${p[0]}<br><small>${us(p[2])}</small></th>`).join('')}</tr><tr>${pr.map(p=>`<td>${fD(p[1],p[2])}</td>`).join('')}</tr></table></div>
+  <p class="note">${t('flange')}: b<sub>f</sub>/2t<sub>f</sub> = ${fl0.lamf.toFixed(2)} (λp ${fl0.lpf.toFixed(2)}, λr ${fl0.lrf.toFixed(2)}) → ${cls(fl0.fcls)} &nbsp;|&nbsp; ${t('web')}: h/t<sub>w</sub> = ${fl0.lamw.toFixed(2)} (λp ${fl0.lpw.toFixed(2)}, λr ${fl0.lrw.toFixed(2)}) → ${cls(fl0.wcls)}<br>
+  M<sub>p</sub> = ${fD(fl0.Mp,'mom')} ${us('mom')}, L<sub>p</sub> = ${fD(fl0.Lp,'len')} ${us('len')}, L<sub>r</sub> = ${fD(fl0.Lr,'len')} ${us('len')}; V<sub>n</sub> = ${fD(dz.sh.Vn,'force')} ${us('force')} (C<sub>v1</sub> = ${dz.sh.Cv1.toFixed(3)}, ${lr?'φ<sub>v</sub> = '+dz.sh.phi:'Ω<sub>v</sub> = '+dz.sh.om})</p></div>`;
+ // design table
+ let dt=`<div class="card"><h3>${t('designCheck')} — AISC 360-22 ${st.code}</h3><div class="tablewrap"><table>
+ <tr><th rowspan="2">${t('spanNo')}</th><th colspan="5">${t('flexure')}</th><th colspan="3">${t('shear')}</th><th colspan="4">${t('deflection')} (${t('service')})</th><th rowspan="2">${t('status')}</th></tr>
+ <tr><th>${dM} [${us('mom')}]</th><th>L<sub>b</sub> / C<sub>b</sub></th><th>${capM} [${us('mom')}]</th><th>${t('ratio')}</th><th>${t('combo')}</th>
+ <th>${dV} [${us('force')}]</th><th>${capV} [${us('force')}]</th><th>${t('ratio')}</th>
+ <th>δ<sub>L</sub> [${us('defl')}]</th><th>${t('limit')}</th><th>δ<sub>D+L</sub> [${us('defl')}]</th><th>${t('limit')}</th></tr>`;
+ dz.rows.forEach(r=>{const worst=Math.max(r.flex.ratio,r.shear.ratio,r.rL,r.rT);
+  dt+=`<tr><td>${r.s+1}${r.cant?'*':''}</td><td>${fD(r.flex.Mmax,'mom')}</td><td>${fD(r.flex.fl.Lb,'len')} / ${r.flex.fl.Cb.toFixed(2)}</td><td>${fD(r.flex.cap,'mom')}</td><td>${r.flex.ratio.toFixed(3)}</td><td>${r.flex.combo}</td>
+  <td>${fD(r.shear.Vmax,'force')}</td><td>${fD(r.shear.cap,'force')}</td><td>${r.shear.ratio.toFixed(3)}</td>
+  <td>${fD(r.dL,'defl')}</td><td>${fD(r.limL,'defl')}</td><td>${fD(r.dT,'defl')}</td><td>${fD(r.limT,'defl')}</td><td>${okc(worst)}</td></tr>`});
+ dt+=`</table></div>`;
+ const det=dz.rows.map(r=>{const f=r.flex.fl;return `<li><b>${t('span')} ${r.s+1}</b>: ${t('segment')} ${r.flex.seg}/${r.flex.nseg} (${fD(r.flex.a,'len')}–${fD(r.flex.b,'len')} ${us('len')}), ${f.zone}; M<sub>n,LTB</sub> = ${fD(f.Mltb,'mom')}, M<sub>n,FLB</sub> = ${fD(f.Mflb,'mom')}, M<sub>n</sub> = ${fD(f.Mn,'mom')} ${us('mom')}; ${t('maxPos')} ${fD(r.mpos,'mom')}, ${t('maxNeg')} ${fD(r.mneg,'mom')} ${us('mom')}</li>`}).join('');
+ dt+=`<details open class="detail mt"><summary><b>${t('details')}</b></summary><ul>${det}</ul><p class="note">${lr?'φ<sub>b</sub> = 0.90':'Ω<sub>b</sub> = 1.67'}. C<sub>b</sub> = 12.5M<sub>max</sub>/(2.5M<sub>max</sub>+3M<sub>A</sub>+4M<sub>B</sub>+3M<sub>C</sub>) ≤ 3.0. ${dz.rows.some(r=>r.cant)?'* '+t('cantNote'):''}<br>${t('designNote')}</p></details></div>`;
+ $('#report').innerHTML=head+msgs+inputSummary(res.sec)+comboBar+summary+diagrams+rt+dt+sp;
+}
+function inputSummary(sec){
+ const st=state;
+ const sup=st.supports.map((s,i)=>`S${i+1}: ${t('sup_'+s)}`).join(', ');
+ const spans=st.spans.map((L,i)=>`${t('span')} ${i+1} = ${fD(L,'len')} ${us('len')}`).join(', ');
+ const ld=st.loads.map((l,i)=>{let d;
+  if(l.type==='point')d=`x = ${fD(l.x,'len')} ${us('len')}, P = ${fD(l.P,'force')} ${us('force')}`;
+  else if(l.type==='moment')d=`x = ${fD(l.x,'len')} ${us('len')}, M = ${fD(l.M,'mom')} ${us('mom')}`;
+  else{const r=`${fD(l.x1,'len')}–${fD(l.x2,'len')} ${us('len')}`;
+   d=l.type==='udl'?`${r}, w = ${fD(l.w,'dist')} ${us('dist')}`:l.type==='tri'?`${r}, w max = ${fD(l.w,'dist')} ${us('dist')} @ ${l.peak==='start'?t('peakStart'):t('peakEnd')}`:`${r}, w1 = ${fD(l.w1,'dist')}, w2 = ${fD(l.w2,'dist')} ${us('dist')}`}
+  return `<tr><td>${i+1}</td><td class="l">${t('ld_'+l.type)}</td><td>${l.case}</td><td>${l.span+1}</td><td class="l">${d}</td></tr>`}).join('');
+ const D=st.design;const lb=D.lbMode==='custom'?`${t('lb_custom')}: ${fD(D.lb,'len')} ${us('len')}`:t('lb_'+D.lbMode);
+ return `<div class="card print-only"><h3>${t('inputSummary')}</h3>
+ <p class="detail"><b>${t('supports')}:</b> ${sup}<br><b>${t('spans')}:</b> ${spans}</p>
+ <div class="tablewrap"><table><tr><th>#</th><th class="l">${t('type')}</th><th>${t('case')}</th><th>${t('span')}</th><th class="l">${t('mag')}</th></tr>${ld}</table></div>
+ <p class="detail"><b>${t('matSec')}:</b> ${esc(st.material.grade==='custom'?t('custom'):st.material.grade)} — Fy = ${fD(st.material.Fy,'stress')}, Fu = ${fD(st.material.Fu,'stress')}, E = ${fD(st.material.E,'stress')} ${us('stress')};
+ ${esc(st.section.preset==='custom'?t('custom'):st.section.preset)} — d ${fD(st.section.d,'dim')}, bf ${fD(st.section.bf,'dim')}, tw ${fD(st.section.tw,'dim')}, tf ${fD(st.section.tf,'dim')} ${us('dim')}<br>
+ <b>${t('design')}:</b> ${D.selfWeight?t('selfWeight')+'; ':''}${t('lbMode')}: ${lb}; Cb: ${D.cbMode==='auto'?t('cb_auto'):t('cb_one')}; L/${D.defLL} (${t('liveOnly')}), L/${D.defTL} (D+L)</p></div>`;
+}
+
+/* ====================== Rendering & events ====================== */
+function $(s){return document.querySelector(s)}
+function renderStatic(){
+ document.documentElement.lang=HTML_LANG[state.lang]||'en';document.title=t('appTitle');
+ document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n));
+ $('#langSel').value=state.lang;$('#codeSel').value=state.code;
+ $('#unitSel').innerHTML=Object.entries(UNITS).map(([k,u])=>`<option value="${k}"${k===state.units?' selected':''}>${u.label}</option>`).join('');
+}
+function renderAll(){renderStatic();renderInputs();renderResults();persist()}
+let timer=null;function scheduleCalc(){clearTimeout(timer);timer=setTimeout(()=>{renderResults();persist()},180)}
+function setPath(path,val){const ks=path.split('.');let o=state;for(let i=0;i<ks.length-1;i++)o=o[ks[i]];o[ks[ks.length-1]]=val}
+function getPath(path){return path.split('.').reduce((o,k)=>o?.[k],state)}
+function applyInput(el){
+ const path=el.dataset.path,kind=el.dataset.kind;let v;
+ if(kind==='num'){v=parseFloat(el.value);if(!isFinite(v))return false;if(el.dataset.q)v=fromD(v,el.dataset.q)}
+ else if(kind==='chk')v=el.checked;else v=el.value;
+ if(/^loads\.\d+\.span$/.test(path))v=parseInt(v,10);
+ const m=path.match(/^spans\.(\d+)$/);
+ if(m){if(!(v>0))return false;const i=+m[1],old=state.spans[i];state.loads.forEach(l=>{if(l.span!==i)return;const k=v/old;for(const f of['x','x1','x2'])l[f]=Math.min(v,l[f]*k)})}
+ setPath(path,v);
+ if(path==='section.preset'&&SHAPES[v]){const[d,bf,tw,tf]=SHAPES[v];Object.assign(state.section,{d,bf,tw,tf})}
+ if(/^section\.(d|bf|tw|tf)$/.test(path)){state.section.preset='custom';const s=document.querySelector('[data-path="section.preset"]');if(s)s.value='custom'}
+ if(path==='material.grade'&&GRADES[v]){state.material.Fy=GRADES[v][0];state.material.Fu=GRADES[v][1];return 'rr'}
+ if(/^material\.(Fy|Fu)$/.test(path)){state.material.grade='custom';const s=document.querySelector('[data-path="material.grade"]');if(s)s.value='custom'}
+ return true;
+}
+document.addEventListener('input',e=>{const el=e.target;if(!el.dataset||!el.dataset.path||el.tagName==='SELECT'||el.type==='checkbox'||el.dataset.rr)return;if(applyInput(el))scheduleCalc()});
+document.addEventListener('change',e=>{const el=e.target;
+ if(el.id==='langSel'){state.lang=el.value;renderAll();return}
+ if(el.id==='unitSel'){state.units=el.value;renderAll();return}
+ if(el.id==='codeSel'){state.code=el.value;state.view.combo='combo:1';renderAll();return}
+ if(el.id==='comboSel'){state.view.combo=el.value;renderResults();persist();return}
+ if(el.id==='fileInput'){openFile(el);return}
+ if(!el.dataset||!el.dataset.path)return;
+ if(el.tagName==='SELECT'||el.type==='checkbox'||el.dataset.rr){const r=applyInput(el);if(el.dataset.rr||r==='rr')renderAll();else scheduleCalc()}
+});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act,i=+b.dataset.i;
+ if(a==='addSpan'){const L=state.spans[state.spans.length-1]||6000;state.spans.push(L);state.supports.push('roller');renderAll()}
+ else if(a==='delSpan'){state.spans.splice(i,1);state.supports.splice(i+1,1);state.loads=state.loads.filter(l=>l.span!==i).map(l=>({...l,span:l.span>i?l.span-1:l.span}));renderAll()}
+ else if(a==='addLoad'){const L=state.spans[0];state.loads.push({type:'udl',case:'D',span:0,x:L/2,P:10*kN,M:10*kN*m,x1:0,x2:L,w:10,w1:5,w2:10,peak:'end'});renderAll()}
+ else if(a==='delLoad'){state.loads.splice(i,1);renderAll()}
+ else if(a==='new'){if(confirm(t('confirmNew'))){const lang=state.lang,units=state.units,code=state.code;state=defaultState();Object.assign(state,{lang,units,code,loads:[],project:{name:'',engineer:'',notes:''}});renderAll()}}
+ else if(a==='open'){$('#fileInput').value='';$('#fileInput').click()}
+ else if(a==='save')saveFile();
+ else if(a==='print')window.print();
+ else if(a==='pdf')exportPDF();
+});
+function fileBase(){return (state.project.name||'beam').replace(/[\\/:*?"<>|]+/g,'_').trim()||'beam'}
+function saveFile(){
+ const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fileBase()+'.beam.json';document.body.appendChild(a);a.click();
+ setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+}
+function openFile(input){const f=input.files&&input.files[0];if(!f)return;const r=new FileReader();
+ r.onload=()=>{try{const s=JSON.parse(r.result);if(!validState(s))throw 0;state=mergeState(s);renderAll()}catch(e){alert(t('openError'))}};r.readAsText(f)}
+function loadScript(src){return new Promise((ok,no)=>{if(window.html2pdf)return ok();const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s)})}
+async function exportPDF(){
+ try{await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js')}catch(e){alert(t('pdfFallback'));window.print();return}
+ document.body.classList.add('pdf-mode');
+ try{await window.html2pdf().set({margin:[10,10,10,10],filename:fileBase()+'.pdf',image:{type:'jpeg',quality:0.96},html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy'],avoid:['.card']}}).from($('#report')).save()}
+ catch(e){alert(t('pdfFallback'));window.print()}
+ finally{document.body.classList.remove('pdf-mode')}
+}
+window.__beam={analyze:s=>analyze(s),design:(s,r)=>design(s,r),get state(){return state}};
+renderAll();
+</script>
+</body>
+</html>
